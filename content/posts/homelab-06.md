@@ -105,4 +105,4 @@ Media lives on large spinning disks in a few pools, mounted into the containers 
 None of this is clever. That is what makes it the part of the homelab nobody has to think about.
 
 ---
-*Cover photo by [freestocks.org](https://www.pexels.com/@freestocks) on [Pexels](https://www.pexels.com).*
+*Cover photo by [Enes Bayraktar](https://www.pexels.com/@galleryofmyeye) on [Pexels](https://www.pexels.com).*

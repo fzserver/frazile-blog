@@ -38,4 +38,4 @@
 {{if .RecentComments}}<section class="panel"><div class="row between"><h2>Latest comments</h2><a class="btn btn-ghost btn-sm" href="/admin/comments">Moderate →</a></div>
 <ul class="mini-comments">{{range .RecentComments}}<li><a href="/u/{{.Username}}">{{.Name}}</a> on <a href="/p/{{.PostSlug}}#c{{.ID}}">{{.PostTitle}}</a> <small class="muted">{{ago .Created}}</small>{{if ne .Status "visible"}} <span class="tag warn">{{.Status}}</span>{{end}}<p>{{trunc .Body 200}}</p></li>{{end}}</ul></section>{{end}}
 {{end}}
-{{define "scripts"}}<script src="/static/js/dashboard.js" defer></script>{{end}}
+{{define "scripts"}}<script src="/static/js/dashboard.js?v={{.V}}" defer></script>{{end}}

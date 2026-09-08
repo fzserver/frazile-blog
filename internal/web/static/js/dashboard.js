@@ -2,7 +2,7 @@
   'use strict';
   var panel=document.querySelector('.chart-panel');if(!panel)return;
   var period=panel.dataset.period||'30d';
-  var accent=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#7c5cff';
+  var accent=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#ec4899';
   var ok=getComputedStyle(document.documentElement).getPropertyValue('--ok').trim()||'#1f9d55';
   var muted=getComputedStyle(document.documentElement).getPropertyValue('--muted').trim()||'#888';
   var NS='http://www.w3.org/2000/svg';

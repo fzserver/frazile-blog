@@ -5,7 +5,9 @@ package web
 
 import (
 	"context"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,6 +49,9 @@ type Server struct {
 	mux     *http.ServeMux
 	lim     *limiter
 	started time.Time
+	// staticV fingerprints the embedded assets so cached copies at the CDN
+	// and in browsers are bypassed after every rebuild.
+	staticV string
 
 	// viewsSeen dedupes post view counting per (post, ip) for an hour.
 	mu        sync.Mutex
@@ -56,6 +61,7 @@ type Server struct {
 func New(cfg config.Config, db *store.Store, st *stats.Store, mailer *mail.Sender, log *slog.Logger) (*Server, error) {
 	s := &Server{cfg: cfg, db: db, stats: st, mailer: mailer, log: log, mux: http.NewServeMux(),
 		lim: newLimiter(), viewsSeen: map[string]int64{}, started: time.Now()}
+	s.staticV = staticVersion()
 	settings, err := db.LoadSettings(context.Background())
 	if err != nil {
 		return nil, err
@@ -207,6 +213,7 @@ func (s *Server) data(r *http.Request, title string) map[string]any {
 		"Year":      time.Now().Year(),
 		"MailOn":    s.mailer != nil,
 		"Query":     r.URL.Query().Get("q"),
+		"V":         s.staticV,
 	}
 	if c, err := r.Cookie(flashCookie); err == nil && c.Value != "" {
 		if v, err := url.QueryUnescape(c.Value); err == nil {
@@ -242,7 +249,7 @@ func (s *Server) notFound(w http.ResponseWriter, r *http.Request) {
 	d := s.data(r, "Not found")
 	d["NoIndex"] = true
 	s.renderStatus(w, r, http.StatusNotFound, "error", map[string]any{
-		"Site": d["Site"], "User": d["User"], "Path": d["Path"], "Title": "Not found", "Public": d["Public"], "Year": d["Year"], "NoIndex": true,
+		"Site": d["Site"], "User": d["User"], "Path": d["Path"], "Title": "Not found", "Public": d["Public"], "Year": d["Year"], "NoIndex": true, "V": d["V"], "MailOn": d["MailOn"],
 		"Code": 404, "Message": "That page does not exist, or has been unpublished."})
 }
 
@@ -476,7 +483,7 @@ func secure(next http.Handler) http.Handler {
 		h.Set("X-Frame-Options", "SAMEORIGIN")
 		h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		h.Set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' https: data:; media-src 'self' https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'")
+		h.Set("Content-Security-Policy", "default-src 'self'; img-src 'self' https: data:; media-src 'self' https:; frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'")
 		next.ServeHTTP(w, r)
 	})
 }
@@ -488,6 +495,20 @@ func (s *Server) Handler() http.Handler {
 	h = s.withUser(h)
 	h = secure(h)
 	return h
+}
+
+// staticVersion hashes the embedded static tree.
+func staticVersion() string {
+	h := sha256.New()
+	fs.WalkDir(staticFS, "static", func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			b, _ := fs.ReadFile(staticFS, p)
+			h.Write([]byte(p))
+			h.Write(b)
+		}
+		return nil
+	})
+	return hex.EncodeToString(h.Sum(nil))[:10]
 }
 
 // ---- small formatting helpers ----

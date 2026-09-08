@@ -36,7 +36,7 @@ func DefaultSettings() Settings {
 		RegistrationOpen: true,
 		CommentsOpen:     true,
 		PerPage:          10,
-		Accent:           "#7c5cff",
+		Accent:           "#ec4899",
 		NotifyComments:   true,
 		NotifyUsers:      true,
 	}
