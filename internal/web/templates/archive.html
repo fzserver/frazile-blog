@@ -1,0 +1,3 @@
+{{define "content"}}<div class="wrap narrow"><h1 class="page-title">Archive</h1>
+{{if .Months}}<ul class="archive">{{range .Months}}<li><a href="/archive/{{.Year}}/{{printf "%02d" .Month}}">{{.Name}} {{.Year}}</a><span class="muted">{{.Count}} post{{if ne .Count 1}}s{{end}}</span></li>{{end}}</ul>{{else}}<p class="empty">Nothing published yet.</p>{{end}}
+</div>{{end}}

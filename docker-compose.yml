@@ -1,0 +1,66 @@
+services:
+  frazile-blog:
+    build: .
+    image: frazile-blog:latest
+    container_name: frazile-blog
+    restart: unless-stopped
+    ports:
+      # Localhost only: public traffic arrives through the shared cloudflared
+      # tunnel over the frazileserver network (blog.frazile.com), not this port.
+      - "127.0.0.1:8092:8080"
+    environment:
+      ADDR: ":8080"
+      PUBLIC_URL: "https://blog.frazile.com"
+      DATA_DIR: /data
+      MEDIA_DIR: /data/media
+      TZ: "Asia/Kolkata"
+      # Behind cloudflared: the client IP is CF-Connecting-IP.
+      TRUST_PROXY: "1"
+      # Verification / reset codes go out through Resend. The sender must be
+      # on a domain verified in the Resend account (frazile.xyz is; frazile.com
+      # is not yet). Key lives in .env, never here.
+      RESEND_API_KEY: "${RESEND_API_KEY:?set RESEND_API_KEY in .env}"
+      MAIL_FROM: "${MAIL_FROM:-Frazile Blog <blog@frazile.xyz>}"
+      MAIL_REPLY_TO: "${MAIL_REPLY_TO:-}"
+      # Bootstrap admin: only used the first time, when no admin exists.
+      ADMIN_USERNAME: "${ADMIN_USERNAME:-frazile}"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:?set ADMIN_EMAIL in .env}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}"
+      # Traffic dashboard geolocation: the DB-IP files already on disk for
+      # the wallpaper API, mounted read-only below.
+      GEOIP_CITY_DB: /geoip/dbip-city.mmdb
+      GEOIP_ASN_DB: /geoip/dbip-asn.mmdb
+      VPN_CIDR_FILE: ""
+      # New-comment / new-member pings.
+      NTFY_URL: "${NTFY_URL:-https://fzntfy.frazile.app/frazileblog}"
+      MAX_IMAGE_MB: "25"
+      MAX_VIDEO_MB: "1024"
+      LOG_LEVEL: info
+    volumes:
+      # The only writable mount: blog.db, stats.db, traffic/ journal, media/.
+      - /mnt/fzhnas1/frazileserver/frazile-blog:/data
+      - /mnt/fzhnas1/frazileserver/wallpaper-api/geoip:/geoip:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "/blogd", "-healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - frazileserver
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  frazileserver:
+    external: true

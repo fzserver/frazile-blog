@@ -1,0 +1,12 @@
+{{define "content"}}<div class="wrap auth"><form method="post" action="/register" class="panel">
+<h1>Create an account</h1>
+{{if not .Open}}<p class="alert">Registration is closed at the moment.</p>{{else}}
+{{with .Error}}<p class="alert">{{.}}</p>{{end}}
+<label>Username<input name="username" value="{{.Username}}" required pattern="[A-Za-z0-9_]{3,24}" autocomplete="username" autofocus><small class="muted">3–24 letters, digits or underscores.</small></label>
+<label>E-mail<input type="email" name="email" value="{{.Email}}" required autocomplete="email"><small class="muted">We'll send a 6-digit code to verify it.</small></label>
+<label>Password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+<div class="hp"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+<button class="btn wide" type="submit">Sign up</button>
+<p class="muted center">Already have an account? <a href="/login">Log in</a></p>
+{{end}}
+</form></div>{{end}}

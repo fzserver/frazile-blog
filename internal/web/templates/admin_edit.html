@@ -1,0 +1,64 @@
+{{define "content"}}{{$p := .P}}
+<form method="post" action="/admin/posts/save" enctype="multipart/form-data" class="editor" id="editor">
+<input type="hidden" name="id" value="{{$p.ID}}">
+<div class="admin-head">
+  <h1>{{if $p.ID}}Edit post{{else}}New post{{end}} {{if $p.IsPublished}}<span class="tag ok">Published</span>{{else if $p.Scheduled}}<span class="tag warn">Scheduled</span>{{else}}<span class="tag">Draft</span>{{end}}</h1>
+  <div class="row">
+    {{if $p.ID}}<a class="btn btn-ghost btn-sm" href="{{$p.URL}}" target="_blank">Preview</a>{{end}}
+    <button class="btn btn-ghost" type="submit" name="action" value="save">{{if eq $p.Status "published"}}Save changes{{else}}Save draft{{end}}</button>
+    {{if eq $p.Status "published"}}<button class="btn btn-ghost" type="submit" name="action" value="unpublish">Unpublish</button>{{else}}<button class="btn" type="submit" name="action" value="publish">Publish</button>{{end}}
+  </div>
+</div>
+<div class="editor-grid">
+  <div class="editor-main">
+    <input class="title-input" name="title" placeholder="Post title" value="{{$p.Title}}" required autocomplete="off">
+    <div class="toolbar" role="toolbar">
+      <button type="button" data-wrap="**" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button type="button" data-wrap="_" title="Italic (Ctrl+I)"><i>I</i></button>
+      <button type="button" data-line="## " title="Heading">H2</button>
+      <button type="button" data-line="### " title="Subheading">H3</button>
+      <button type="button" data-line="> " title="Quote">❝</button>
+      <button type="button" data-line="- " title="List">•</button>
+      <button type="button" data-wrap="`" title="Inline code">&lt;/&gt;</button>
+      <button type="button" data-block="```\n" title="Code block">{ }</button>
+      <button type="button" data-link title="Link (Ctrl+K)">🔗</button>
+      <span class="sep"></span>
+      <button type="button" data-upload="image" title="Insert image">🖼 Image</button>
+      <button type="button" data-upload="video" title="Insert video">🎬 Video</button>
+      <button type="button" data-youtube title="Embed YouTube">▶ YouTube</button>
+      <span class="sep"></span>
+      <button type="button" data-preview title="Toggle preview">👁 Preview</button>
+      <span class="grow"></span><span class="muted" id="wc"></span>
+    </div>
+    <input type="file" id="upload-input" hidden>
+    <div class="editor-split">
+      <textarea name="body" id="body" placeholder="Write in Markdown… Paste or drop images and videos to upload them." spellcheck="true">{{$p.BodyMD}}</textarea>
+      <div class="prose preview" id="preview" hidden></div>
+    </div>
+    <div id="upload-status" class="muted"></div>
+  </div>
+  <aside class="editor-side">
+    <div class="panel">
+      <label>Slug<input name="slug" value="{{$p.Slug}}" placeholder="auto from title"></label>
+      <label>Summary<textarea name="summary" rows="3" maxlength="300" placeholder="One or two sentences for cards, search engines and RSS">{{$p.Summary}}</textarea></label>
+      <label>Tags<input name="tags" value="{{tagNames $p.Tags}}" placeholder="go, homelab, ai"></label>
+      <label>Publish date<input type="datetime-local" name="published_at" value="{{dateInput $p.PublishedAt}}"><small class="muted">Leave empty for now. A future time schedules the post.</small></label>
+      <label class="check"><input type="checkbox" name="comments_enabled" {{if $p.CommentsEnabled}}checked{{end}}> Allow comments</label>
+      {{if .User.IsAdmin}}<label class="check"><input type="checkbox" name="pinned" {{if $p.Pinned}}checked{{end}}> Pin to top of home page</label>{{end}}
+    </div>
+    <div class="panel">
+      <h3>Cover image</h3>
+      <div id="cover-preview">{{if $p.Cover}}<img src="{{$p.Cover}}" alt="">{{end}}</div>
+      <label>Upload<input type="file" name="cover_file" accept="image/*"></label>
+      <label>…or URL<input name="cover" value="{{$p.Cover}}" placeholder="/media/… or https://…"></label>
+      {{if $p.Cover}}<label class="check"><input type="checkbox" name="remove_cover"> Remove cover</label>{{end}}
+    </div>
+    {{if $p.ID}}<div class="panel">
+      <p class="muted">Created {{datetime $p.Created}}<br>Updated {{datetime $p.Updated}}<br>{{num $p.Views}} views · {{$p.Likes}} likes · {{$p.CommentCount}} comments</p>
+      <details><summary class="linkbtn danger">Delete this post</summary><p class="muted">This also deletes its comments and likes. Uploaded media stays in the library.</p><button class="btn btn-danger" type="submit" formaction="/admin/posts/{{$p.ID}}/delete" formnovalidate>Yes, delete permanently</button></details>
+    </div>{{end}}
+  </aside>
+</div>
+</form>
+{{end}}
+{{define "scripts"}}<script src="/static/js/editor.js" defer></script>{{end}}

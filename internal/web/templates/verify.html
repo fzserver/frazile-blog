@@ -1,0 +1,10 @@
+{{define "content"}}<div class="wrap auth"><form method="post" action="/verify" class="panel">
+<h1>Check your inbox</h1>
+<p class="muted">We sent a 6-digit code to <strong>{{.Email}}</strong>. Enter it below to finish. Check the spam folder if it's not there within a minute.</p>
+{{with .Error}}<p class="alert">{{.}}</p>{{end}}
+<input type="hidden" name="email" value="{{.Email}}">
+<label>Verification code<input class="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" autofocus></label>
+<button class="btn wide" type="submit">Verify</button>
+</form>
+<form method="post" action="/verify/resend" class="center"><input type="hidden" name="email" value="{{.Email}}"><button class="linkbtn" type="submit">Send a new code</button></form>
+</div>{{end}}

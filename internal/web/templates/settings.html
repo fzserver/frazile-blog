@@ -1,0 +1,44 @@
+{{define "content"}}{{$u := .User}}<div class="wrap narrow settings">
+<h1 class="page-title">Account settings</h1>
+<div class="grid2">
+<form method="post" action="/settings/profile" class="panel">
+  <h2>Profile</h2>
+  <label>Display name<input name="display_name" value="{{$u.DisplayName}}" maxlength="60" placeholder="{{$u.Username}}"></label>
+  <label>Bio<textarea name="bio" rows="3" maxlength="500">{{$u.Bio}}</textarea></label>
+  <label>Website<input name="website" value="{{$u.Website}}" maxlength="200" placeholder="https://"></label>
+  <button class="btn" type="submit">Save profile</button>
+</form>
+<form method="post" action="/settings/avatar" enctype="multipart/form-data" class="panel">
+  <h2>Avatar</h2>
+  <div class="row">{{template "avatar" (dict "Name" $u.Name "Avatar" $u.Avatar "Size" 72)}}<div>
+  <label>New image<input type="file" name="avatar" accept="image/*"></label><small class="muted">Square crop, 256px. JPEG/PNG/GIF/WebP up to 10 MB.</small></div></div>
+  <div class="row"><button class="btn" type="submit">Upload</button>{{if $u.Avatar}}<button class="btn btn-ghost" type="submit" name="remove" value="1">Remove</button>{{end}}</div>
+</form>
+<form method="post" action="/settings/password" class="panel" id="password">
+  <h2>Password</h2>
+  <label>Current password<input type="password" name="current" required autocomplete="current-password"></label>
+  <label>New password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+  <button class="btn" type="submit">Change password</button>
+</form>
+<div class="panel" id="email">
+  <h2>E-mail</h2>
+  <p class="muted">Current: <strong>{{$u.Email}}</strong></p>
+  {{if .PendingEmail}}
+  <form method="post" action="/settings/email/confirm">
+    <input type="hidden" name="email" value="{{.PendingEmail}}">
+    <label>Code sent to {{.PendingEmail}}<input class="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code"></label>
+    <button class="btn" type="submit">Confirm new address</button>
+  </form>
+  {{else}}
+  <form method="post" action="/settings/email">
+    <label>New e-mail<input type="email" name="email" required></label>
+    <button class="btn" type="submit">Send confirmation code</button>
+  </form>
+  {{end}}
+</div>
+<form method="post" action="/settings/logout-all" class="panel">
+  <h2>Sessions</h2>
+  <p class="muted">Signed in on another device you don't recognise? Sign out everywhere.</p>
+  <button class="btn btn-ghost" type="submit">Sign out of all devices</button>
+</form>
+</div></div>{{end}}

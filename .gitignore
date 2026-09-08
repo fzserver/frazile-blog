@@ -1,0 +1,6 @@
+.env
+.env.bak.*
+*.db
+*.db-*
+/blogd
+/data/

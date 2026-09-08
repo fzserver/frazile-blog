@@ -1,0 +1,15 @@
+{{define "content"}}{{$q := .Q}}
+<div class="admin-head"><h1>Traffic log <small class="muted">{{num .Total}} rows</small></h1><a class="btn btn-ghost btn-sm" href="/admin/traffic.csv?ip={{q $q.IP}}&path={{q $q.Path}}&country={{q $q.Country}}&user={{q $q.User}}&source={{q $q.Source}}&device={{q $q.Device}}&since={{.Since}}{{if $q.Bots}}&bots=1{{end}}">Export CSV</a></div>
+<form class="panel filters" method="get" action="/admin/traffic">
+  <input name="ip" placeholder="IP" value="{{$q.IP}}"><input name="path" placeholder="Path contains" value="{{$q.Path}}"><input name="country" placeholder="Country" value="{{$q.Country}}"><input name="user" placeholder="Username" value="{{$q.User}}"><input name="source" placeholder="Source" value="{{$q.Source}}">
+  <select name="device"><option value="">Any device</option><option value="desktop" {{if eq $q.Device "desktop"}}selected{{end}}>desktop</option><option value="mobile" {{if eq $q.Device "mobile"}}selected{{end}}>mobile</option><option value="tablet" {{if eq $q.Device "tablet"}}selected{{end}}>tablet</option><option value="bot" {{if eq $q.Device "bot"}}selected{{end}}>bot</option></select>
+  <select name="since"><option value="">All time</option><option value="24h" {{if eq .Since "24h"}}selected{{end}}>Last 24h</option><option value="7d" {{if eq .Since "7d"}}selected{{end}}>Last 7 days</option><option value="30d" {{if eq .Since "30d"}}selected{{end}}>Last 30 days</option></select>
+  <label class="check"><input type="checkbox" name="bots" value="1" {{if $q.Bots}}checked{{end}}> include bots</label>
+  <button class="btn btn-sm" type="submit">Filter</button> <a class="btn btn-ghost btn-sm" href="/admin/traffic">Reset</a>
+</form>
+<div class="tablewrap"><table class="data">
+<tr><th>Time</th><th>Path</th><th>IP</th><th>User</th><th>Location</th><th>Provider</th><th>Client</th><th>Source</th></tr>
+{{range .Rows}}<tr><td class="nowrap" title="{{datetime .TS}}">{{datetime .TS}}</td><td><a href="{{.Path}}">{{trunc .Path 48}}</a></td><td><a href="/admin/traffic?ip={{.IP}}">{{.IP}}</a>{{if .VPN}} <span class="tag warn">VPN</span>{{end}}</td><td>{{if .User}}<a href="/u/{{.User}}">{{.User}}</a>{{end}}</td><td>{{.City}}{{if .City}}, {{end}}{{.Region}}{{if .Region}}, {{end}}{{.Country}}</td><td><small>{{.Provider}}</small></td><td title="{{.UA}}">{{.Browser}} · {{.OS}} · {{.Device}}</td><td>{{if .Landing}}{{.Source}}/{{.Medium}}{{if .Referrer}}<br><small class="muted">{{.Referrer}}</small>{{end}}{{else}}<small class="muted">internal</small>{{end}}</td></tr>{{end}}
+</table></div>
+{{template "pagination" (dict "Page" .Page "Pages" .Pages "Base" .Base)}}
+{{end}}

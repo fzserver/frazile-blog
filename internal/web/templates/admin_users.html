@@ -1,0 +1,20 @@
+{{define "content"}}
+<div class="admin-head"><h1>Users <small class="muted">{{.Total}}</small></h1></div>
+<form class="panel filters" method="get" action="/admin/users"><input name="q" placeholder="Search username, e-mail, name" value="{{.Q}}"><select name="role"><option value="">Any role</option><option value="reader" {{if eq .Role "reader"}}selected{{end}}>reader</option><option value="author" {{if eq .Role "author"}}selected{{end}}>author</option><option value="admin" {{if eq .Role "admin"}}selected{{end}}>admin</option></select><button class="btn btn-sm" type="submit">Search</button></form>
+<div class="tablewrap"><table class="data">
+<tr><th>User</th><th>E-mail</th><th>Role</th><th>Status</th><th>Joined</th><th>Last seen</th><th>Actions</th></tr>
+{{range .Users}}<tr>
+<td>{{template "avatar" (dict "Name" .Name "Avatar" .Avatar "Size" 28)}} <a href="/u/{{.Username}}"><strong>{{.Username}}</strong></a>{{if .DisplayName}}<br><small class="muted">{{.DisplayName}}</small>{{end}}</td>
+<td>{{.Email}}</td>
+<td><form method="post" action="/admin/users/{{.ID}}/role" class="inline-form"><select name="role" onchange="this.form.submit()"{{if eq .ID $.User.ID}} disabled{{end}}><option value="reader" {{if eq .Role "reader"}}selected{{end}}>reader</option><option value="author" {{if eq .Role "author"}}selected{{end}}>author</option><option value="admin" {{if eq .Role "admin"}}selected{{end}}>admin</option></select></form></td>
+<td>{{if .Banned}}<span class="tag warn">Banned</span>{{else if not .Verified}}<span class="tag">Unverified</span>{{else}}<span class="tag ok">Active</span>{{end}}</td>
+<td class="nowrap">{{date .Created}}</td><td class="nowrap">{{if .LastSeen}}{{ago .LastSeen}}{{else}}—{{end}}</td>
+<td class="nowrap">{{if ne .ID $.User.ID}}
+  {{if not .Verified}}<form method="post" action="/admin/users/{{.ID}}/verify" class="inline-form"><button class="btn btn-ghost btn-sm">Verify</button></form>{{end}}
+  {{if .Banned}}<form method="post" action="/admin/users/{{.ID}}/unban" class="inline-form"><button class="btn btn-ghost btn-sm">Unban</button></form>{{else}}<form method="post" action="/admin/users/{{.ID}}/ban" class="inline-form"><button class="btn btn-ghost btn-sm">Ban</button></form>{{end}}
+  <details class="inline"><summary class="linkbtn danger">Delete</summary><form method="post" action="/admin/users/{{.ID}}/delete"><button class="btn btn-danger btn-sm">Delete user + their comments</button></form></details>
+{{else}}<span class="muted">you</span>{{end}}</td>
+</tr>{{end}}
+</table></div>
+{{template "pagination" (dict "Page" .Page "Pages" .Pages "Base" .Base)}}
+{{end}}

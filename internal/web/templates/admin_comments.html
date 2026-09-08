@@ -1,0 +1,15 @@
+{{define "content"}}
+<div class="admin-head"><h1>Comments <small class="muted">{{.Total}}</small></h1></div>
+<nav class="seg"><a href="/admin/comments" {{if eq .Status ""}}class="on"{{end}}>All</a><a href="/admin/comments?status=pending" {{if eq .Status "pending"}}class="on"{{end}}>Pending{{if .Pending}} ({{.Pending}}){{end}}</a><a href="/admin/comments?status=visible" {{if eq .Status "visible"}}class="on"{{end}}>Visible</a><a href="/admin/comments?status=hidden" {{if eq .Status "hidden"}}class="on"{{end}}>Hidden</a></nav>
+<ul class="mod-list">{{range .Comments}}<li class="panel">
+  <div class="row between"><div>{{template "avatar" (dict "Name" .Name "Avatar" .Avatar "Size" 28)}} <a href="/u/{{.Username}}"><strong>{{.Name}}</strong></a> on <a href="/p/{{.PostSlug}}#c{{.ID}}">{{.PostTitle}}</a> <small class="muted">{{datetime .Created}}</small></div>
+  {{if eq .Status "pending"}}<span class="tag warn">Pending</span>{{else if eq .Status "hidden"}}<span class="tag warn">Hidden</span>{{else}}<span class="tag ok">Visible</span>{{end}}</div>
+  <div class="comment-body">{{.BodyHTML}}</div>
+  <div class="row">
+    {{if ne .Status "visible"}}<form method="post" action="/admin/comments/{{.ID}}/approve"><button class="btn btn-sm" type="submit">Approve</button></form>{{end}}
+    {{if ne .Status "hidden"}}<form method="post" action="/admin/comments/{{.ID}}/hide"><button class="btn btn-ghost btn-sm" type="submit">Hide</button></form>{{end}}
+    <details class="inline"><summary class="linkbtn danger">Delete</summary><form method="post" action="/admin/comments/{{.ID}}/delete"><button class="btn btn-danger btn-sm" type="submit">Confirm delete</button></form></details>
+  </div>
+</li>{{else}}<li class="muted">No comments{{if .Status}} with that status{{end}}.</li>{{end}}</ul>
+{{template "pagination" (dict "Page" .Page "Pages" .Pages "Base" .Base)}}
+{{end}}

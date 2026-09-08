@@ -1,0 +1,63 @@
+{{define "avatar"}}{{if .Avatar}}<img class="avatar" src="{{.Avatar}}" width="{{.Size}}" height="{{.Size}}" alt="" loading="lazy">{{else}}<span class="avatar avatar-txt" style="width:{{.Size}}px;height:{{.Size}}px;font-size:{{mul .Size 4 | printf "%d" }}%">{{initials .Name}}</span>{{end}}{{end}}
+
+{{define "postcard"}}<article class="card{{if .Pinned}} pinned{{end}}">
+  {{if .Cover}}<a class="card-cover" href="{{.URL}}"><img src="{{.Cover}}" alt="" loading="lazy"></a>{{end}}
+  <div class="card-body">
+    <div class="meta">
+      {{if .Pinned}}<span class="tag pin">Pinned</span>{{end}}
+      <time datetime="{{iso .PublishedAt}}">{{date .PublishedAt}}</time> · {{.ReadingMin}} min read
+      {{range .Tags}} · <a class="taglink" href="/tag/{{.Slug}}">#{{.Name}}</a>{{end}}
+    </div>
+    <h2><a href="{{.URL}}">{{.Title}}</a></h2>
+    {{if .Summary}}<p class="summary">{{.Summary}}</p>{{end}}
+    <div class="meta foot">
+      <a class="author" href="/u/{{.Author}}">{{template "avatar" (dict "Name" .AuthorName "Avatar" .AuthorAvatar "Size" 22)}} {{.AuthorName}}</a>
+      <span>{{num .Views}} views · {{.Likes}} likes · {{.CommentCount}} comments</span>
+    </div>
+  </div>
+</article>{{end}}
+
+{{define "pagination"}}{{if and .Pages (gt .Pages 1)}}<nav class="pagination" aria-label="Pages">
+  {{if gt .Page 1}}<a class="btn btn-ghost" href="{{pageURL .Base (sub .Page 1)}}">← Newer</a>{{else}}<span></span>{{end}}
+  <span class="muted">Page {{.Page}} of {{.Pages}}</span>
+  {{if lt .Page .Pages}}<a class="btn btn-ghost" href="{{pageURL .Base (add .Page 1)}}">Older →</a>{{else}}<span></span>{{end}}
+</nav>{{end}}{{end}}
+
+{{define "sidebar"}}<aside class="sidebar">
+  {{if .Recent}}<section class="side-block">
+    <h3>Recent posts</h3>
+    <ul class="recent">{{range .Recent}}<li><a href="{{.URL}}">{{.Title}}</a><small>{{date .PublishedAt}}</small></li>{{end}}</ul>
+  </section>{{end}}
+  {{if .TagCloud}}<section class="side-block">
+    <h3>Tags</h3>
+    <div class="tagcloud">{{range .TagCloud}}<a class="tag" href="/tag/{{.Slug}}">{{.Name}} <span>{{.Count}}</span></a>{{end}}</div>
+  </section>{{end}}
+  <section class="side-block">
+    <h3>Subscribe</h3>
+    <p class="muted">Follow via <a href="/feed.xml">RSS</a>{{if not .User}}, or <a href="/register">create an account</a> to like and comment{{end}}.</p>
+  </section>
+</aside>{{end}}
+
+{{define "comment"}}{{$c := .C}}{{$u := .User}}
+<li class="comment{{if ne $c.Status "visible"}} comment-{{$c.Status}}{{end}}" id="c{{$c.ID}}">
+  <div class="comment-head">
+    <a href="/u/{{$c.Username}}" class="author">{{template "avatar" (dict "Name" $c.Name "Avatar" $c.Avatar "Size" 30)}} <strong>{{$c.Name}}</strong></a>
+    {{if eq $c.Role "admin"}}<span class="tag pin">Admin</span>{{else if eq $c.Role "author"}}<span class="tag">Author</span>{{end}}
+    <a class="muted" href="#c{{$c.ID}}"><time datetime="{{iso $c.Created}}" title="{{datetime $c.Created}}">{{ago $c.Created}}</time></a>
+    {{if $c.Edited}}<span class="muted">(edited)</span>{{end}}
+    {{if eq $c.Status "pending"}}<span class="tag warn">Awaiting moderation</span>{{else if eq $c.Status "hidden"}}<span class="tag warn">Hidden</span>{{end}}
+  </div>
+  <div class="comment-body">{{$c.BodyHTML}}</div>
+  <div class="comment-actions">
+    {{if $u}}{{if .Open}}<button type="button" class="linkbtn reply-btn" data-id="{{$c.ID}}" data-name="{{$c.Name}}">Reply</button>{{end}}
+    {{if or (eq $u.ID $c.UserID) $u.IsAdmin}}
+      <details class="inline"><summary class="linkbtn">Edit</summary>
+        <form method="post" action="/comments/{{$c.ID}}/edit" class="comment-form"><textarea name="body" rows="3" required maxlength="4000">{{$c.Body}}</textarea><button class="btn btn-sm" type="submit">Save</button></form>
+      </details>
+      <details class="inline"><summary class="linkbtn danger">Delete</summary>
+        <form method="post" action="/comments/{{$c.ID}}/delete"><button class="btn btn-sm btn-danger" type="submit">Yes, delete this comment</button></form>
+      </details>
+    {{end}}{{end}}
+  </div>
+  {{if $c.Replies}}<ul class="replies">{{range $c.Replies}}{{template "comment" (dict "C" . "User" $u "Open" $.Open)}}{{end}}</ul>{{end}}
+</li>{{end}}

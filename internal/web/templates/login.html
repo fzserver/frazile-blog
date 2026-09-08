@@ -1,0 +1,9 @@
+{{define "content"}}<div class="wrap auth"><form method="post" action="/login" class="panel">
+<h1>Log in</h1>
+{{with .Error}}<p class="alert">{{.}}</p>{{end}}
+<input type="hidden" name="next" value="{{.Next}}">
+<label>Username or e-mail<input name="login" value="{{.Login}}" required autocomplete="username" autofocus></label>
+<label>Password<input type="password" name="password" required autocomplete="current-password"></label>
+<button class="btn wide" type="submit">Log in</button>
+<p class="muted center"><a href="/forgot">Forgot your password?</a> · <a href="/register">Create an account</a></p>
+</form></div>{{end}}

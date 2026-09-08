@@ -1,0 +1,13 @@
+{{define "content"}}{{$u := .Profile}}<div class="wrap narrow">
+<section class="profile-head">
+  {{template "avatar" (dict "Name" $u.Name "Avatar" $u.Avatar "Size" 96)}}
+  <div>
+    <h1>{{$u.Name}} <span class="muted">@{{$u.Username}}</span> {{if $u.IsAdmin}}<span class="tag pin">Admin</span>{{else if $u.CanWrite}}<span class="tag">Author</span>{{end}}</h1>
+    {{if $u.Bio}}<p>{{$u.Bio}}</p>{{end}}
+    <p class="meta">Joined {{date $u.Created}}{{if $u.Website}} · <a href="{{$u.Website}}" rel="nofollow noopener" target="_blank">{{$u.Website}}</a>{{end}} · {{$u.PostCount}} posts · {{$u.CommentCount}} comments
+    {{if and .User (eq .User.ID $u.ID)}} · <a href="/settings">Edit profile</a>{{end}}</p>
+  </div>
+</section>
+{{if .Posts}}<h2>Posts</h2><div class="cards">{{range .Posts}}{{template "postcard" .}}{{end}}</div>{{end}}
+{{if .Comments}}<h2>Recent comments</h2><ul class="mini-comments">{{range .Comments}}<li><a href="/p/{{.PostSlug}}#c{{.ID}}">{{.PostTitle}}</a> <small class="muted">{{ago .Created}}</small><p>{{trunc .Body 240}}</p></li>{{end}}</ul>{{end}}
+</div>{{end}}

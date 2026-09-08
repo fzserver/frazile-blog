@@ -1,0 +1,30 @@
+{{define "content"}}{{$s := .St}}
+<div class="admin-head"><h1>Site settings</h1></div>
+<form method="post" action="/admin/settings" class="settings-form">
+<div class="grid2">
+<div class="panel"><h2>Identity</h2>
+  <label>Site name<input name="site_name" value="{{$s.SiteName}}" required maxlength="60"></label>
+  <label>Tagline<input name="tagline" value="{{$s.Tagline}}" maxlength="160"></label>
+  <label>Meta description<textarea name="description" rows="2" maxlength="300">{{$s.Description}}</textarea></label>
+  <label>Footer text<input name="footer" value="{{$s.Footer}}" maxlength="120"></label>
+  <label>Accent colour<input type="color" name="accent" value="{{$s.Accent}}"></label>
+  <label>Posts per page<input type="number" name="per_page" value="{{$s.PerPage}}" min="1" max="50"></label>
+</div>
+<div class="panel"><h2>Community</h2>
+  <label class="check"><input type="checkbox" name="registration_open" {{if $s.RegistrationOpen}}checked{{end}}> Allow new sign-ups {{if not .MailOn}}<small class="muted">(mail is not configured, so sign-ups are disabled anyway)</small>{{end}}</label>
+  <label class="check"><input type="checkbox" name="comments_open" {{if $s.CommentsOpen}}checked{{end}}> Allow comments site-wide</label>
+  <label class="check"><input type="checkbox" name="comments_moderated" {{if $s.CommentsModerated}}checked{{end}}> Hold new members' comments for approval</label>
+  <label class="check"><input type="checkbox" name="notify_comments" {{if $s.NotifyComments}}checked{{end}}> ntfy me on new comments</label>
+  <label class="check"><input type="checkbox" name="notify_users" {{if $s.NotifyUsers}}checked{{end}}> ntfy me on new members</label>
+  <p class="muted">Notifications go to <code>{{if .Ntfy}}{{.Ntfy}}{{else}}(NTFY_URL unset){{end}}</code>. Verification e-mails are sent from <code>{{if .MailFrom}}{{.MailFrom}}{{else}}(MAIL_FROM unset){{end}}</code>.</p>
+  <h2>Social links</h2>
+  <label>X / Twitter handle<input name="twitter" value="{{$s.Twitter}}"></label>
+  <label>GitHub<input name="github" value="{{$s.GitHub}}"></label>
+  <label>Instagram<input name="instagram" value="{{$s.Instagram}}"></label>
+  <label>YouTube (channel path, e.g. @frazile)<input name="youtube" value="{{$s.YouTube}}"></label>
+</div>
+</div>
+<div class="panel"><h2>About page</h2><label>Markdown<textarea name="about_md" rows="12">{{$s.AboutMD}}</textarea></label></div>
+<div class="row"><button class="btn" type="submit">Save settings</button></div>
+</form>
+{{end}}

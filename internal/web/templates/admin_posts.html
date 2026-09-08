@@ -1,0 +1,15 @@
+{{define "content"}}
+<div class="admin-head"><h1>Posts <small class="muted">{{.Total}}</small></h1><a class="btn" href="/admin/posts/new">+ New post</a></div>
+<nav class="seg"><a href="/admin/posts" {{if eq .Status ""}}class="on"{{end}}>All</a><a href="/admin/posts?status=published" {{if eq .Status "published"}}class="on"{{end}}>Published</a><a href="/admin/posts?status=scheduled" {{if eq .Status "scheduled"}}class="on"{{end}}>Scheduled</a><a href="/admin/posts?status=draft" {{if eq .Status "draft"}}class="on"{{end}}>Drafts</a></nav>
+<div class="tablewrap"><table class="data">
+<tr><th>Title</th><th>Status</th><th>Author</th><th>Date</th><th>Views (7d / all)</th><th>Likes</th><th>Comments</th><th></th></tr>
+{{range .Posts}}<tr>
+<td><a href="/admin/posts/{{.ID}}"><strong>{{.Title}}</strong></a>{{if .Pinned}} <span class="tag pin">Pinned</span>{{end}}<br><small class="muted">/p/{{.Slug}}{{range .Tags}} · #{{.Name}}{{end}}</small></td>
+<td>{{if .IsPublished}}<span class="tag ok">Published</span>{{else if .Scheduled}}<span class="tag warn">Scheduled</span>{{else}}<span class="tag">Draft</span>{{end}}</td>
+<td>{{.AuthorName}}</td><td class="nowrap">{{date .Date.Unix}}</td>
+<td>{{index $.Views7d .ID}} / {{num .Views}}</td><td>{{.Likes}}</td><td>{{.CommentCount}}</td>
+<td class="nowrap"><a class="btn btn-ghost btn-sm" href="{{.URL}}" target="_blank">View</a> <a class="btn btn-ghost btn-sm" href="/admin/posts/{{.ID}}">Edit</a></td>
+</tr>{{else}}<tr><td colspan="8" class="muted">No posts here. <a href="/admin/posts/new">Write one.</a></td></tr>{{end}}
+</table></div>
+{{template "pagination" (dict "Page" .Page "Pages" .Pages "Base" .Base)}}
+{{end}}

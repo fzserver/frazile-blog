@@ -1,0 +1,41 @@
+{{define "content"}}{{$s := .S}}{{$t := .Totals}}
+<div class="admin-head"><h1>Dashboard</h1>
+<nav class="seg">  <a href="/admin?period=24h" {{if eq .Period "24h"}}class="on"{{end}}>24h</a><a href="/admin?period=7d" {{if eq .Period "7d"}}class="on"{{end}}>7d</a><a href="/admin?period=30d" {{if eq .Period "30d"}}class="on"{{end}}>30d</a><a href="/admin?period=90d" {{if eq .Period "90d"}}class="on"{{end}}>90d</a><a href="/admin?period=all" {{if eq .Period "all"}}class="on"{{end}}>All</a>
+</nav></div>
+<div class="stat-grid">
+  <div class="stat"><span class="label">Page views</span><strong>{{num $s.Views}}</strong><small>{{num $t.ViewsToday}} in the last 24h</small></div>
+  <div class="stat"><span class="label">Unique visitors</span><strong>{{num $s.Uniques}}</strong><small>{{num $s.Landings}} landings</small></div>
+  <div class="stat"><span class="label">Members</span><strong>{{num $t.Users}}</strong><small>+{{$t.UsersWeek}} this week</small></div>
+  <div class="stat"><span class="label">Comments</span><strong>{{num $t.Comments}}</strong><small>{{if $t.Pending}}<a href="/admin/comments?status=pending">{{$t.Pending}} pending</a>{{else}}none pending{{end}}</small></div>
+  <div class="stat"><span class="label">Posts</span><strong>{{$t.Posts}}</strong><small>{{$t.Drafts}} drafts · <a href="/admin/posts/new">new</a></small></div>
+  <div class="stat"><span class="label">Media</span><strong>{{.MediaCount}}</strong><small>{{bytes .MediaSize}}</small></div>
+  <div class="stat"><span class="label">Bots filtered</span><strong>{{num $s.Bots}}</strong><small>{{num $t.Visits}} rows total</small></div>
+</div>
+<section class="panel chart-panel" data-period="{{.Period}}">
+  <div class="row between"><h2>Traffic</h2><span class="legend"><i class="sw a"></i>views <i class="sw b"></i>uniques</span></div>
+  <div id="chart" class="chart" aria-label="Traffic over time"></div>
+  <div class="row between"><h3>By hour of day (UTC)</h3></div>
+  <div id="hours" class="chart small" aria-label="Views by hour"></div>
+</section>
+<div class="grid2">
+  <section class="panel"><h2>Top posts</h2>{{if .TopPosts}}<table class="bars">{{range .TopPosts}}<tr><td><a href="{{.Path}}">{{trunc .Title 60}}</a></td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table>{{else}}<p class="muted">No data yet.</p>{{end}}</section>
+  <section class="panel"><h2>Top pages</h2><table class="bars">{{range $s.TopPaths}}<tr><td><a href="{{.Name}}">{{trunc .Name 50}}</a></td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table></section>
+  <section class="panel"><h2>Sources <small class="muted">(landings)</small></h2><table class="bars">{{range $s.Sources}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Landings}}%"></i></td></tr>{{end}}</table>
+    {{if $s.Mediums}}<p class="muted chips">{{range $s.Mediums}}<span class="tag">{{.Name}} {{.Count}}</span> {{end}}</p>{{end}}</section>
+  <section class="panel"><h2>Referrers</h2>{{if $s.Referrers}}<table class="bars">{{range $s.Referrers}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Landings}}%"></i></td></tr>{{end}}</table>{{else}}<p class="muted">Only direct traffic so far.</p>{{end}}</section>
+  <section class="panel"><h2>Countries</h2>{{if not .Geo}}<p class="muted">GeoIP databases not loaded.</p>{{end}}<table class="bars">{{range $s.Countries}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table></section>
+  <section class="panel"><h2>Cities</h2><table class="bars">{{range $s.Cities}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table></section>
+  <section class="panel"><h2>Browsers</h2><table class="bars">{{range $s.Browsers}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table></section>
+  <section class="panel"><h2>Operating systems</h2><table class="bars">{{range $s.OSes}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table></section>
+  <section class="panel"><h2>Devices</h2><table class="bars">{{range $s.Devices}}<tr><td>{{.Name}}</td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table></section>
+  <section class="panel"><h2>Most active members</h2>{{if $s.Users}}<table class="bars">{{range $s.Users}}<tr><td><a href="/u/{{.Name}}">{{.Name}}</a></td><td class="n">{{num .Count}}</td><td class="bar"><i style="width:{{pct .Count $s.Views}}%"></i></td></tr>{{end}}</table>{{else}}<p class="muted">No logged-in visits yet.</p>{{end}}</section>
+</div>
+<section class="panel"><div class="row between"><h2>Latest visits</h2><a class="btn btn-ghost btn-sm" href="/admin/traffic">Full log →</a></div>
+<div class="tablewrap"><table class="data">
+<tr><th>Time</th><th>Path</th><th>Visitor</th><th>Location</th><th>Client</th><th>From</th></tr>
+{{range .Recent}}<tr><td class="nowrap">{{ago .TS}}</td><td><a href="{{.Path}}">{{trunc .Path 40}}</a></td><td>{{if .User}}<a href="/u/{{.User}}">{{.User}}</a><br>{{end}}<a class="muted" href="/admin/traffic?ip={{.IP}}">{{.IP}}</a>{{if .VPN}} <span class="tag warn">VPN</span>{{end}}</td><td>{{.City}}{{if .City}}, {{end}}{{.Country}}<br><small class="muted">{{.Provider}}</small></td><td>{{.Browser}} · {{.OS}}<br><small class="muted">{{.Device}}</small></td><td>{{if .Landing}}{{.Source}}{{if .Referrer}}<br><small class="muted">{{.Referrer}}</small>{{end}}{{else}}<small class="muted">internal</small>{{end}}</td></tr>{{end}}
+</table></div></section>
+{{if .RecentComments}}<section class="panel"><div class="row between"><h2>Latest comments</h2><a class="btn btn-ghost btn-sm" href="/admin/comments">Moderate →</a></div>
+<ul class="mini-comments">{{range .RecentComments}}<li><a href="/u/{{.Username}}">{{.Name}}</a> on <a href="/p/{{.PostSlug}}#c{{.ID}}">{{.PostTitle}}</a> <small class="muted">{{ago .Created}}</small>{{if ne .Status "visible"}} <span class="tag warn">{{.Status}}</span>{{end}}<p>{{trunc .Body 200}}</p></li>{{end}}</ul></section>{{end}}
+{{end}}
+{{define "scripts"}}<script src="/static/js/dashboard.js" defer></script>{{end}}

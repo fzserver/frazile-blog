@@ -1,0 +1,14 @@
+{{define "content"}}
+<div class="admin-head"><h1>Media <small class="muted">{{.Total}}</small></h1></div>
+<form class="panel" method="post" action="/admin/media/upload" enctype="multipart/form-data">
+  <div class="row"><input type="file" name="files" multiple accept="image/*,video/*"><button class="btn" type="submit">Upload</button><span class="muted">Images up to {{.MaxImageMB}} MB, videos up to {{.MaxVideoMB}} MB.</span></div>
+</form>
+<nav class="seg"><a href="/admin/media" {{if eq .Kind ""}}class="on"{{end}}>All</a><a href="/admin/media?kind=image" {{if eq .Kind "image"}}class="on"{{end}}>Images</a><a href="/admin/media?kind=video" {{if eq .Kind "video"}}class="on"{{end}}>Videos</a></nav>
+<div class="media-grid">{{range .Media}}<figure class="media-item">
+  <a href="{{.URL}}" target="_blank">{{if eq .Kind "image"}}<img src="{{.URL}}" alt="" loading="lazy">{{else}}<video src="{{.URL}}" preload="metadata" muted></video>{{end}}</a>
+  <figcaption><span title="{{.OriginalName}}">{{trunc .OriginalName 28}}</span><small class="muted">{{bytes .Size}}{{if .Width}} · {{.Width}}×{{.Height}}{{end}} · {{date .Created}}</small>
+  <div class="row"><button type="button" class="linkbtn copy" data-url="{{$.Public}}{{.URL}}">Copy URL</button><button type="button" class="linkbtn copy" data-url="{{if eq .Kind "image"}}![]({{.URL}}){{else}}video:{{.URL}}{{end}}">Copy markdown</button>
+  {{if or $.User.IsAdmin (eq .UploaderID $.User.ID)}}<details class="inline"><summary class="linkbtn danger">Delete</summary><form method="post" action="/admin/media/{{.ID}}/delete"><button class="btn btn-danger btn-sm">Confirm</button></form></details>{{end}}</div></figcaption>
+</figure>{{else}}<p class="muted">No uploads yet.</p>{{end}}</div>
+{{template "pagination" (dict "Page" .Page "Pages" .Pages "Base" .Base)}}
+{{end}}

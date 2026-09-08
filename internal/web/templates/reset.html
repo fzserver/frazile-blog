@@ -1,0 +1,9 @@
+{{define "content"}}<div class="wrap auth"><form method="post" action="/reset" class="panel">
+<h1>Choose a new password</h1>
+<p class="muted">If <strong>{{.Email}}</strong> belongs to an account, a code is on its way.</p>
+{{with .Error}}<p class="alert">{{.}}</p>{{end}}
+<input type="hidden" name="email" value="{{.Email}}">
+<label>Code from the e-mail<input class="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" autofocus></label>
+<label>New password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+<button class="btn wide" type="submit">Change password</button>
+</form></div>{{end}}

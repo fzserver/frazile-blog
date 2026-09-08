@@ -1,0 +1,3 @@
+{{define "content"}}<div class="wrap narrow article"><h1 class="page-title">About</h1>
+{{if .About}}<div class="prose">{{safe .About}}</div>{{else}}<p class="muted">{{.Site.Tagline}}</p>{{end}}
+</div>{{end}}

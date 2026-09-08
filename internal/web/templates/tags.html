@@ -1,0 +1,3 @@
+{{define "content"}}<div class="wrap narrow"><h1 class="page-title">Tags</h1>
+{{if .Tags}}<div class="tagcloud big">{{range .Tags}}<a class="tag" href="/tag/{{.Slug}}">{{.Name}} <span>{{.Count}}</span></a>{{end}}</div>{{else}}<p class="empty">No tags yet.</p>{{end}}
+</div>{{end}}

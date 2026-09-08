@@ -1,0 +1,16 @@
+{{define "content"}}
+{{if .Home}}<section class="hero"><div class="wrap"><h1>{{.Site.SiteName}}</h1><p class="lede">{{.Site.Tagline}}</p></div></section>{{end}}
+<div class="wrap two-col">
+  <div class="main-col">
+    {{if .Heading}}<h1 class="page-title">{{.Heading}}</h1>{{end}}
+    {{if and (eq .Path "/search") (not .Query)}}
+      <form action="/search" class="bigsearch"><input type="search" name="q" placeholder="Search posts…" autofocus aria-label="Search"><button class="btn" type="submit">Search</button></form>
+    {{else if not .Posts}}
+      <p class="empty">Nothing here yet.</p>
+    {{end}}
+    <div class="cards">{{range .Posts}}{{template "postcard" .}}{{end}}</div>
+    {{template "pagination" (dict "Page" .Page "Pages" .Pages "Base" .Base)}}
+  </div>
+  {{template "sidebar" .}}
+</div>
+{{end}}
