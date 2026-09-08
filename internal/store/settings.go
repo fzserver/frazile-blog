@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"strconv"
+	"strings"
 )
 
 // Settings is everything the admin can change from the panel without a
@@ -25,7 +26,34 @@ type Settings struct {
 	Accent            string
 	NotifyComments    bool // ntfy on new comment
 	NotifyUsers       bool // ntfy on new registration
+	// Nav is the header menu, one "Label|/path" per line.
+	Nav          string
+	ContactMD    string
+	ContactHTML  string
+	ContactEmail string // where the contact form delivers; empty = admin bootstrap address
 }
+
+// NavLink is one parsed header menu entry.
+type NavLink struct {
+	Label string
+	URL   string
+}
+
+// NavLinks parses Nav; malformed lines are skipped.
+func (s Settings) NavLinks() []NavLink {
+	var out []NavLink
+	for _, line := range strings.Split(s.Nav, "\n") {
+		label, url, ok := strings.Cut(strings.TrimSpace(line), "|")
+		label, url = strings.TrimSpace(label), strings.TrimSpace(url)
+		if !ok || label == "" || url == "" {
+			continue
+		}
+		out = append(out, NavLink{label, url})
+	}
+	return out
+}
+
+const DefaultNav = "Home|/\nApple|/tag/apple\nHomelab|/tag/homelab\nAbout|/about\nContact|/contact"
 
 func DefaultSettings() Settings {
 	return Settings{
@@ -39,6 +67,7 @@ func DefaultSettings() Settings {
 		Accent:           "#ec4899",
 		NotifyComments:   true,
 		NotifyUsers:      true,
+		Nav:              DefaultNav,
 	}
 }
 
@@ -92,6 +121,14 @@ func (s *Store) LoadSettings(ctx context.Context) (Settings, error) {
 			st.NotifyComments = b
 		case "notify_users":
 			st.NotifyUsers = b
+		case "nav":
+			st.Nav = v
+		case "contact_md":
+			st.ContactMD = v
+		case "contact_html":
+			st.ContactHTML = v
+		case "contact_email":
+			st.ContactEmail = v
 		}
 	}
 	return st, rows.Err()
@@ -116,6 +153,10 @@ func (s *Store) SaveSettings(ctx context.Context, st Settings) error {
 		"accent":             st.Accent,
 		"notify_comments":    strconv.Itoa(b2i(st.NotifyComments)),
 		"notify_users":       strconv.Itoa(b2i(st.NotifyUsers)),
+		"nav":                st.Nav,
+		"contact_md":         st.ContactMD,
+		"contact_html":       st.ContactHTML,
+		"contact_email":      st.ContactEmail,
 	}
 	for k, v := range kv {
 		if _, err := s.db.ExecContext(ctx, `INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`, k, v); err != nil {

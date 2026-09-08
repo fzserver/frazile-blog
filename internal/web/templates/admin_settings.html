@@ -24,6 +24,11 @@
   <label>YouTube (channel path, e.g. @frazile)<input name="youtube" value="{{$s.YouTube}}"></label>
 </div>
 </div>
+<div class="panel"><h2>Navigation</h2><label>Header menu, one per line as <code>Label|/path</code><textarea name="nav" rows="6">{{$s.Nav}}</textarea><small class="muted">Tag pages are /tag/&lt;slug&gt;. Example: <code>Apple|/tag/apple</code></small></label></div>
+<div class="panel"><h2>Contact page</h2>
+  <label>Deliver contact form to<input type="email" name="contact_email" value="{{$s.ContactEmail}}" placeholder="{{.AdminEmail}}"></label>
+  <label>Intro text (Markdown)<textarea name="contact_md" rows="5">{{$s.ContactMD}}</textarea></label>
+</div>
 <div class="panel"><h2>About page</h2><label>Markdown<textarea name="about_md" rows="12">{{$s.AboutMD}}</textarea></label></div>
 <div class="row"><button class="btn" type="submit">Save settings</button></div>
 </form>

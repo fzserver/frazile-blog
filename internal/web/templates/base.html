@@ -27,10 +27,7 @@
   <div class="wrap bar">
     <a class="brand" href="/">{{.Site.SiteName}}</a>
     <nav class="nav-links">
-      <a href="/" {{if eq .Path "/"}}class="on"{{end}}>Posts</a>
-      <a href="/tags" {{if hasPrefix .Path "/tag"}}class="on"{{end}}>Tags</a>
-      <a href="/archive" {{if hasPrefix .Path "/archive"}}class="on"{{end}}>Archive</a>
-      <a href="/about" {{if eq .Path "/about"}}class="on"{{end}}>About</a>
+      {{range .Site.NavLinks}}<a href="{{.URL}}" {{if eq $.Path .URL}}class="on"{{end}}>{{.Label}}</a>{{end}}
     </nav>
     <form class="search" action="/search" role="search">
       <input type="search" name="q" placeholder="Search…" value="{{.Query}}" aria-label="Search posts">
@@ -40,7 +37,7 @@
         <summary aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
         <div class="mobile-pop">
           <form class="search-m" action="/search" role="search"><input type="search" name="q" placeholder="Search…" value="{{.Query}}" aria-label="Search posts"></form>
-          <a href="/">Posts</a><a href="/tags">Tags</a><a href="/archive">Archive</a><a href="/about">About</a>
+          {{range .Site.NavLinks}}<a href="{{.URL}}" {{if eq $.Path .URL}}class="on"{{end}}>{{.Label}}</a>{{end}}<a href="/tags" class="muted">All tags</a><a href="/archive" class="muted">Archive</a>
           {{if .User}}<a href="/u/{{.User.Username}}">My profile</a><a href="/settings">Account settings</a>{{if .User.CanWrite}}<a href="/admin">{{if .User.IsAdmin}}Admin panel{{else}}My posts{{end}}</a>{{end}}{{else}}<a href="/login">Log in</a><a href="/register">Sign up</a>{{end}}
         </div>
       </details>

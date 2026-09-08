@@ -42,6 +42,8 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /archive", s.archive)
 	m.HandleFunc("GET /archive/{year}/{month}", s.archiveMonth)
 	m.HandleFunc("GET /about", s.about)
+	m.HandleFunc("GET /contact", s.contactForm)
+	m.HandleFunc("POST /contact", s.contact)
 	m.HandleFunc("GET /u/{username}", s.profile)
 	m.HandleFunc("GET /feed.xml", s.feed)
 	m.HandleFunc("GET /rss", func(w http.ResponseWriter, r *http.Request) {
@@ -240,6 +242,76 @@ func (s *Server) about(w http.ResponseWriter, r *http.Request) {
 	d := s.data(r, "About")
 	d["About"] = s.Settings().AboutHTML
 	s.render(w, r, "about", d)
+}
+
+// ---- contact ----
+
+func (s *Server) contactAddress() string {
+	if e := s.Settings().ContactEmail; e != "" {
+		return e
+	}
+	return s.cfg.AdminEmail
+}
+
+func (s *Server) contactForm(w http.ResponseWriter, r *http.Request) {
+	d := s.data(r, "Contact")
+	d["Contact"] = s.Settings().ContactHTML
+	d["FormOn"] = s.mailer != nil && s.contactAddress() != ""
+	if u := s.user(r); u != nil {
+		d["Name"], d["Email"] = u.Name(), u.Email
+	}
+	s.render(w, r, "contact", d)
+}
+
+func (s *Server) contact(w http.ResponseWriter, r *http.Request) {
+	d := s.data(r, "Contact")
+	d["Contact"] = s.Settings().ContactHTML
+	d["FormOn"] = s.mailer != nil && s.contactAddress() != ""
+	name := strings.TrimSpace(r.FormValue("name"))
+	email := strings.ToLower(strings.TrimSpace(r.FormValue("email")))
+	subject := strings.TrimSpace(r.FormValue("subject"))
+	msg := strings.TrimSpace(r.FormValue("message"))
+	d["Name"], d["Email"], d["Subject"], d["Message"] = name, email, subject, msg
+	fail := func(text string, code int) {
+		d["Error"] = text
+		s.renderStatus(w, r, code, "contact", d)
+	}
+	switch {
+	case !d["FormOn"].(bool):
+		fail("The contact form is not available right now.", http.StatusServiceUnavailable)
+		return
+	case r.FormValue("website") != "": // honeypot
+		s.flash(w, "ok", "Thanks, your message has been sent.")
+		http.Redirect(w, r, "/contact", http.StatusSeeOther)
+		return
+	case !s.limit("contact:"+s.ip(r), 3, time.Hour):
+		fail("Too many messages from your network. Try again later.", http.StatusTooManyRequests)
+		return
+	case len(name) < 2 || len(name) > 80:
+		fail("Please tell us your name.", http.StatusBadRequest)
+		return
+	case !validEmail(email):
+		fail("That e-mail address does not look right.", http.StatusBadRequest)
+		return
+	case len(msg) < 10 || len(msg) > 5000:
+		fail("Messages need to be between 10 and 5000 characters.", http.StatusBadRequest)
+		return
+	}
+	if subject == "" {
+		subject = "Message from " + name
+	}
+	if len(subject) > 120 {
+		subject = subject[:120]
+	}
+	body := fmt.Sprintf("From: %s <%s>\nIP: %s\n\n%s\n", name, email, s.ip(r), msg)
+	if _, err := s.mailer.Send(r.Context(), mailMessage(s.contactAddress(), "[Contact] "+subject, body, email)); err != nil {
+		s.log.Error("contact mail", "err", err)
+		fail("We could not send your message right now. Please try again later.", http.StatusBadGateway)
+		return
+	}
+	go s.notify("Contact form: "+subject, name+" <"+email+">\n"+render.Excerpt(msg, 300), "envelope")
+	s.flash(w, "ok", "Thanks, your message has been sent.")
+	http.Redirect(w, r, "/contact", http.StatusSeeOther)
 }
 
 // ---- post page ----

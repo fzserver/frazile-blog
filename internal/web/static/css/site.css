@@ -272,3 +272,6 @@ body{overflow-x:hidden}
   .stat-grid{grid-template-columns:1fr 1fr}.hero h1{font-size:1.7rem}.tagcloud.big .tag{font-size:.9rem}
 }
 @media (hover:none){.card h2 a,.recent a{-webkit-tap-highlight-color:transparent}}
+.nav-links a{text-transform:uppercase;font-size:.78rem;letter-spacing:.06em;font-weight:700}
+.contact-form{margin-top:24px}.contact-form .grid2{gap:0 16px}
+.mobile-pop a.on{color:var(--accent)}

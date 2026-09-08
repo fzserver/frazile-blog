@@ -1,0 +1,17 @@
+{{define "content"}}<div class="wrap narrow article">
+<h1 class="page-title">Contact</h1>
+{{if .Contact}}<div class="prose">{{safe .Contact}}</div>{{else}}<p class="muted">Questions, corrections, or something you would like covered? Send a note.</p>{{end}}
+{{if .FormOn}}
+<form method="post" action="/contact" class="panel contact-form">
+  {{with .Error}}<p class="alert">{{.}}</p>{{end}}
+  <div class="grid2">
+    <label>Your name<input name="name" value="{{.Name}}" required maxlength="80" autocomplete="name"></label>
+    <label>Your e-mail<input type="email" name="email" value="{{.Email}}" required autocomplete="email"></label>
+  </div>
+  <label>Subject<input name="subject" value="{{.Subject}}" maxlength="120"></label>
+  <label>Message<textarea name="message" rows="7" required minlength="10" maxlength="5000">{{.Message}}</textarea></label>
+  <div class="hp"><label>Website<input name="website" tabindex="-1" autocomplete="off"></label></div>
+  <div class="row between"><span class="muted">Replies go to the address you enter.</span><button class="btn" type="submit">Send message</button></div>
+</form>
+{{else}}<p class="muted">The contact form is unavailable at the moment.</p>{{end}}
+</div>{{end}}

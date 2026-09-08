@@ -529,6 +529,7 @@ func (s *Server) adminSettings(w http.ResponseWriter, r *http.Request) {
 	d["St"] = s.Settings()
 	d["MailFrom"] = s.cfg.MailFrom
 	d["Ntfy"] = s.cfg.NtfyURL
+	d["AdminEmail"] = s.cfg.AdminEmail
 	s.render(w, r, "admin_settings", d)
 }
 
@@ -541,6 +542,15 @@ func (s *Server) adminSettingsSave(w http.ResponseWriter, r *http.Request) {
 	st.Tagline = strings.TrimSpace(r.FormValue("tagline"))
 	st.Description = strings.TrimSpace(r.FormValue("description"))
 	st.AboutMD = strings.ReplaceAll(r.FormValue("about_md"), "\r\n", "\n")
+	st.Nav = strings.ReplaceAll(strings.TrimSpace(r.FormValue("nav")), "\r\n", "\n")
+	if st.Nav == "" {
+		st.Nav = store.DefaultNav
+	}
+	st.ContactMD = strings.ReplaceAll(r.FormValue("contact_md"), "\r\n", "\n")
+	st.ContactHTML = render.HTML(st.ContactMD)
+	if e := strings.TrimSpace(r.FormValue("contact_email")); e == "" || validEmail(e) {
+		st.ContactEmail = e
+	}
 	st.AboutHTML = render.HTML(st.AboutMD)
 	st.Footer = strings.TrimSpace(r.FormValue("footer"))
 	st.RegistrationOpen = formBool(r, "registration_open")
