@@ -14,13 +14,17 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/util"
 )
 
 var md = goldmark.New(
 	goldmark.WithExtensions(extension.GFM, extension.Footnote, extension.Typographer),
 	goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-	goldmark.WithRendererOptions(html.WithUnsafe()),
+	goldmark.WithRendererOptions(html.WithUnsafe(),
+		// Priority below the default HTML renderer (1000) so ours wins for raw HTML nodes.
+		renderer.WithNodeRenderers(util.Prioritized(&rawHTMLRenderer{}, 100))),
 )
 
 var policy = func() *bluemonday.Policy {

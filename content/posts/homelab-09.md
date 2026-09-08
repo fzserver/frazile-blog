@@ -1,4 +1,5 @@
 ---
+id: 15
 title: Whisparr: the arr for content that needs its own rules
 slug: whisparr-adult-library
 summary: The arr family has a member for adult content. Running it responsibly is mostly about isolation: a separate library, a separate root, accounts that cannot see it, and metadata sources that behave. The technical notes, nothing else.
@@ -48,7 +49,7 @@ The key decision is in the volumes. The restricted library lives on its **own mo
 
 **Network.** Same as every download client here: behind the VPN container, nothing else.
 
-**Notifications.** Whisparr does **not** get the household ntfy topic. It has its own, with no previews in the notification text. An "imported: <title>" line appearing on a shared phone is exactly the kind of leak this whole setup exists to prevent.
+**Notifications.** Whisparr does **not** get the household ntfy topic. It has its own, with no previews in the notification text. An `imported: <title>` line appearing on a shared phone is exactly the kind of leak this whole setup exists to prevent.
 
 **Search and indexing.** Jackett's indexers are shared, but the ones used for this library are tagged and assigned only to Whisparr, so Sonarr and Radarr do not search them.
 

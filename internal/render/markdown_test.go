@@ -19,6 +19,25 @@ func TestSanitise(t *testing.T) {
 	}
 }
 
+func TestStrayTagsDoNotSwallowContent(t *testing.T) {
+	out := HTML("Before an \"imported: <title>\" line.\n\nAfter <style> and <script>x</script> and <textarea>\n\n## Still here\n\n![pic](/media/a.jpg)")
+	for _, want := range []string{"&lt;title&gt;", "Still here", `src="/media/a.jpg"`, "&lt;textarea&gt;"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("output lacks %q:\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "<script") || strings.Contains(out, "<style") {
+		t.Errorf("raw tag leaked:\n%s", out)
+	}
+	// Allowed raw HTML still works.
+	if v := HTML(`<video controls src="/media/v.mp4"></video>`); !strings.Contains(v, "<video") {
+		t.Errorf("video embed lost:\n%s", v)
+	}
+	if f := HTML("<figure>\n<img src=\"/media/a.jpg\">\n<figcaption>cap</figcaption>\n</figure>"); !strings.Contains(f, "<figcaption>") {
+		t.Errorf("figure block lost:\n%s", f)
+	}
+}
+
 func TestExcerptAndReading(t *testing.T) {
 	txt := Text("<p>Hello <b>there</b> &amp; welcome</p>")
 	if txt != "Hello there & welcome" {
