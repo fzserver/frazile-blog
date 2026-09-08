@@ -4,3 +4,4 @@
 *.db-*
 /blogd
 /data/
+__pycache__/

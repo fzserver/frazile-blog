@@ -64,3 +64,18 @@ internal/mail        Resend client, OTP templates, ntfy
 internal/render      goldmark + bluemonday, excerpts, reading time
 internal/web         handlers, middleware, templates/, static/
 ```
+
+## Tools
+
+- `tools/publish.py content/posts/*.md` publishes markdown files with a
+  small front matter (title, slug, summary, tags, days_ago/published, optional
+  id to update, optional cover). Without a cover it uploads a generated
+  gradient cover.
+- `tools/addimages.py content/plan.tsv` fetches topic photos from Unsplash or
+  Pexels (keys in `.env`), uploads them, sets the cover and inserts two inline
+  figures with photographer credit; `--fix ID SLOT SOURCE "query|word,word"`
+  swaps one photo. `content/posts/` holds the sources of the posts published
+  so far and `content/plan.tsv` the photo queries used for them.
+- Both talk to the running container on `127.0.0.1:8092` with the admin
+  credentials from `.env`; the `Origin` header is set so the same-origin check
+  passes.

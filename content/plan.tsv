@@ -1,0 +1,12 @@
+# post id	markdown file	source	cover query	inline 1	inline 2
+1	content/posts/apple-01.md	unsplash	mac mini desk setup	apple m1 chip macbook	server rack home network|server,rack,network
+2	content/posts/apple-02.md	unsplash	mac mini computer	ethernet cable network switch	terminal command line screen
+3	content/posts/apple-03.md	unsplash	iphone pro camera back|iphone,phone	iphone photo sunset	lightroom mobile editing phone|phone,editing,photo
+4	content/posts/apple-04.md	unsplash	iphone face id unlock	security key usb token|key,usb,security	login password laptop
+5	content/posts/apple-05.md	unsplash	macbook ipad iphone desk	ipad and macbook workspace	airpods iphone
+6	content/posts/apple-06.md	unsplash	portable external hard drive|drive,disk,storage	hard drive disks stack|drive,disk,hdd,storage	nas storage home
+7	content/posts/homelab-01.md	pexels	home server rack	network cables patch panel	programmer code screen
+8	content/posts/homelab-02.md	pexels	network switch cables	data center servers	wifi router
+9	content/posts/homelab-03.md	pexels	linux terminal screen	server room dark	mechanical keyboard programmer
+10	content/posts/homelab-04.md	pexels	hard disk drive open	nvme ssd	home theater tv living room
+11	content/posts/homelab-05.md	pexels	nvidia rtx 3090 graphics card|3090,geforce,graphics card,gpu	gaming pc build rgb	digital art computer screen
