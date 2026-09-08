@@ -15,21 +15,21 @@ type Attribution struct {
 	// hit or a stripped referrer). Never the full URL: the path of the page
 	// someone came from is somebody else's business, and on a search engine
 	// it would carry the query.
-	Referrer string
+	Referrer string `json:"referrer"`
 	// Source is the channel, normalised: "google", "reddit", "x", "direct",
 	// or the hostname when it is nothing known. utm_source wins when present,
 	// because that is the campaign's own claim about itself.
-	Source string
+	Source string `json:"source"`
 	// Medium is how they arrived: organic, social, referral, direct, or
 	// whatever utm_medium says (email, cpc, ...).
-	Medium string
+	Medium string `json:"medium"`
 	// Campaign is utm_campaign, for telling two posts on the same site apart.
-	Campaign string
+	Campaign string `json:"campaign"`
 	// Internal reports that the Referer was this site itself -- someone
 	// clicking from one of our pages to another. Not stored: it exists so
 	// the caller can tell internal navigation from a fresh arrival, which
 	// is the whole difference between a landing and a second pageview.
-	Internal bool
+	Internal bool `json:"-"`
 }
 
 const (
