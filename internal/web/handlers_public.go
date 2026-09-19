@@ -27,7 +27,7 @@ func (s *Server) routes() {
 		fmt.Fprintf(w, "ok %s\n", time.Since(s.started).Truncate(time.Second))
 	})
 	m.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/static/favicon.svg", http.StatusMovedPermanently)
+		http.Redirect(w, r, "/static/favicon-32.png", http.StatusMovedPermanently)
 	})
 
 	m.HandleFunc("GET /{$}", s.home)

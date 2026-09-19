@@ -7,7 +7,9 @@
 <meta name="description" content="{{.Desc}}">
 {{if .NoIndex}}<meta name="robots" content="noindex">{{end}}
 <link rel="canonical" href="{{.Canonical}}">
-<link rel="icon" href="/static/favicon.svg?v={{.V}}" type="image/svg+xml">
+<link rel="icon" href="/static/favicon-32.png?v={{.V}}" type="image/png" sizes="32x32">
+<link rel="icon" href="/static/icon-192.png?v={{.V}}" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png?v={{.V}}">
 <link rel="alternate" type="application/rss+xml" title="{{.Site.SiteName}}" href="/feed.xml">
 <meta property="og:site_name" content="{{.Site.SiteName}}">
 <meta property="og:title" content="{{if .Title}}{{.Title}}{{else}}{{.Site.SiteName}}{{end}}">
