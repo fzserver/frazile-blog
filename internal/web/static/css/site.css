@@ -1,13 +1,13 @@
 :root{
   --bg:#fbfaf8;--bg2:#fff;--fg:#1c1b22;--muted:#6b6a75;--border:#e6e3ee;--card:#fff;
-  --accent:#F041B6;--accent-fg:#fff;--accent-solid:color-mix(in srgb,var(--accent) 80%,#000);--accent-text:var(--accent-solid);--ok:#1f9d55;--warn:#c47a00;--danger:#d63a3a;--code:#f2f0f7;
+  --accent:#1F5BFF;--accent-fg:#fff;--accent-solid:var(--accent);--accent-text:var(--accent);--ok:#1f9d55;--warn:#c47a00;--danger:#d63a3a;--code:#f2f0f7;
   --shadow:0 1px 2px rgba(20,16,40,.06),0 8px 24px -12px rgba(20,16,40,.15);
   --radius:12px;--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   color-scheme:light;
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--accent-text:var(--accent);--bg:#0f0f14;--bg2:#15151c;--fg:#ecebf3;--muted:#9b99a8;--border:#2a2936;--card:#181822;--code:#1e1e2a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);color-scheme:dark}}
-:root[data-theme=dark]{--accent-text:var(--accent);--bg:#0f0f14;--bg2:#15151c;--fg:#ecebf3;--muted:#9b99a8;--border:#2a2936;--card:#181822;--code:#1e1e2a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--accent-text:color-mix(in srgb,var(--accent) 70%,#fff);--bg:#0f0f14;--bg2:#15151c;--fg:#ecebf3;--muted:#9b99a8;--border:#2a2936;--card:#181822;--code:#1e1e2a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme=dark]{--accent-text:color-mix(in srgb,var(--accent) 70%,#fff);--bg:#0f0f14;--bg2:#15151c;--fg:#ecebf3;--muted:#9b99a8;--border:#2a2936;--card:#181822;--code:#1e1e2a;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);color-scheme:dark}
 :root[data-theme=dark] .theme-toggle .sun,:root:not([data-theme]) .theme-toggle .sun{display:none}
 @media (prefers-color-scheme:light){:root:not([data-theme]) .theme-toggle .sun{display:inline}:root:not([data-theme]) .theme-toggle .moon{display:none}}
 :root[data-theme=light] .theme-toggle .moon{display:none}
