@@ -303,8 +303,7 @@ func (s *Server) contact(w http.ResponseWriter, r *http.Request) {
 	if len(subject) > 120 {
 		subject = subject[:120]
 	}
-	body := fmt.Sprintf("From: %s <%s>\nIP: %s\n\n%s\n", name, email, s.ip(r), msg)
-	if _, err := s.mailer.Send(r.Context(), mailMessage(s.contactAddress(), "[Contact] "+subject, body, email)); err != nil {
+	if _, err := s.mailer.Send(r.Context(), contactMail(s.contactAddress(), subject, msg, name, email, s.ip(r))); err != nil {
 		s.log.Error("contact mail", "err", err)
 		fail("We could not send your message right now. Please try again later.", http.StatusBadGateway)
 		return
