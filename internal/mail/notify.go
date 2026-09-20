@@ -7,8 +7,11 @@ import (
 	"time"
 )
 
-// Notify posts a short message to an ntfy topic URL. Fire-and-forget: a
-// failure is nobody's problem but the log's, so it returns nothing.
+// Notify posts a short message to an ntfy topic URL.
+//
+// Deprecated: operator alerts go through internal/notify, which gives every
+// Frazile service the same title, tags, priority and click-through. This
+// remains only for anything outside the web handlers that still calls it.
 func Notify(ctx context.Context, topicURL, title, body string, tags ...string) {
 	if topicURL == "" {
 		return

@@ -31,7 +31,3 @@ func contactMail(to, subject, body, from, fromEmail, ip string) mail.Message {
 }
 
 func contextBG() context.Context { return context.Background() }
-
-func notifyFn(url, title, body string, tags ...string) {
-	mail.Notify(context.Background(), url, title, body, tags...)
-}

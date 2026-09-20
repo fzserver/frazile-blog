@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/fzserver/frazile-blog/internal/notify"
 	"io/fs"
 	"net/http"
 	"os"
@@ -308,7 +309,10 @@ func (s *Server) contact(w http.ResponseWriter, r *http.Request) {
 		fail("We could not send your message right now. Please try again later.", http.StatusBadGateway)
 		return
 	}
-	go s.notify("Contact form: "+subject, name+" <"+email+">\n"+render.Excerpt(msg, 300), "envelope")
+	s.notify(notify.Event{
+		Title: "Contact form", Tag: notify.TagMail, Priority: notify.Normal,
+		Lines: []string{subject, name + " <" + email + ">", render.Excerpt(msg, 240)},
+	})
 	s.flash(w, "ok", "Thanks, your message has been sent.")
 	http.Redirect(w, r, "/contact", http.StatusSeeOther)
 }
@@ -446,7 +450,11 @@ func (s *Server) addComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if st.NotifyComments {
-		go s.notify("New comment on "+p.Title, fmt.Sprintf("%s: %s\n%s%s#c%d", u.Name(), render.Excerpt(body, 200), s.cfg.PublicURL, p.URL(), id), "speech_balloon")
+		s.notify(notify.Event{
+			Title: "New comment", Tag: notify.TagComment, Priority: notify.Quiet,
+			Lines: []string{p.Title, u.Name() + ": " + render.Excerpt(body, 240)},
+			Click: fmt.Sprintf("%s%s#c%d", s.cfg.PublicURL, p.URL(), id),
+		})
 	}
 	if status == store.CommentPending {
 		s.flash(w, "ok", "Thanks! Your comment is awaiting moderation.")
@@ -599,11 +607,15 @@ func (s *Server) robots(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "User-agent: *\nDisallow: /admin\nDisallow: /settings\nDisallow: /login\nDisallow: /register\nDisallow: /verify\nDisallow: /search\nDisallow: /api/\n\nSitemap: %s/sitemap.xml\n", s.cfg.PublicURL)
 }
 
-func (s *Server) notify(title, body string, tags ...string) {
+// notify posts an operator alert in the shape every Frazile service uses:
+// the product, then the event, one fact a line, and a link to the page
+// that answers it. See internal/notify.
+func (s *Server) notify(e notify.Event) {
 	if s.cfg.NtfyURL == "" {
 		return
 	}
-	notifyFn(s.cfg.NtfyURL, title, body, tags...)
+	e.Product = s.Settings().SiteName
+	notify.New(s.cfg.NtfyURL, s.log).Send(e)
 }
 
 var errNoMail = errors.New("mail not configured")

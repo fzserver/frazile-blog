@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"github.com/fzserver/frazile-blog/internal/notify"
 	"net/http"
 	"net/mail"
 	"net/url"
@@ -208,7 +209,10 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if s.Settings().NotifyUsers {
-			go s.notify("New blog member", u.Username+" <"+u.Email+"> verified their account", "bust_in_silhouette")
+			s.notify(notify.Event{
+				Title: "New member", Tag: notify.TagAccount, Priority: notify.Quiet,
+				Lines: []string{u.Username, u.Email},
+			})
 		}
 	}
 	token, err := s.db.CreateSession(r.Context(), u.ID, r.UserAgent(), s.ip(r))
