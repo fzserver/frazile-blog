@@ -127,3 +127,82 @@ func TestLogInNeedsTheCode(t *testing.T) {
 		t.Fatal("not logged in after the code")
 	}
 }
+
+// A second log-in started before the first code is a minute old must not be
+// turned away: the code already mailed stands, and the ticket follows the
+// browser that gave the password last.
+func TestSecondLogInReusesTheFreshCode(t *testing.T) {
+	dir := t.TempDir()
+	db, err := store.Open(filepath.Join(dir, "blog.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.Iters = 1000
+	log := slog.New(slog.NewTextHandler(io.Discard, nil))
+	st, err := stats.Open(filepath.Join(dir, "stats.db"), "", filepath.Join(dir, "traffic"), nil, log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.CreateUser(context.Background(), "asha", "asha@example.com", "correcthorse", store.RoleReader, true); err != nil {
+		t.Fatal(err)
+	}
+	resend := &fakeResend{}
+	rs := httptest.NewServer(resend)
+	s, err := New(config.Config{PublicURL: "http://blog.test", DataDir: dir}, db, st,
+		mail.NewWithEndpoint("re_test", "Blog <blog@example.com>", rs.URL), log)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(s.Handler())
+	t.Cleanup(func() { srv.Close(); rs.Close(); db.Close() })
+
+	password := url.Values{"login": {"asha"}, "password": {"correcthorse"}}
+	login := func(c *http.Client) *http.Response {
+		t.Helper()
+		res, err := c.PostForm(srv.URL+"/login", password)
+		if err != nil {
+			t.Fatal(err)
+		}
+		res.Body.Close()
+		return res
+	}
+
+	first := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	first.Jar, _ = cookiejar.New(nil)
+	if res := login(first); res.Header.Get("Location") != "/login/code" {
+		t.Fatalf("first log-in: %d %s", res.StatusCode, res.Header.Get("Location"))
+	}
+	code := resend.last()
+	if code == "" {
+		t.Fatal("no code was mailed")
+	}
+
+	// A browser with no cookie of its own, within the minute.
+	second := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	second.Jar, _ = cookiejar.New(nil)
+	res := login(second)
+	if res.StatusCode != http.StatusSeeOther || res.Header.Get("Location") != "/login/code" {
+		t.Fatalf("second log-in was turned away: %d %s", res.StatusCode, res.Header.Get("Location"))
+	}
+	if got := resend.last(); got != code {
+		t.Fatalf("a second code was mailed: %q then %q", code, got)
+	}
+
+	// The code in the inbox finishes the log-in in the browser holding the ticket.
+	res, err = second.PostForm(srv.URL+"/login/code", url.Values{"code": {code}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.Header.Get("Location") != "/" {
+		t.Fatalf("code in the second browser: %d %s", res.StatusCode, res.Header.Get("Location"))
+	}
+	res, err = second.Get(srv.URL + "/settings")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		t.Fatal("not logged in after the code")
+	}
+}

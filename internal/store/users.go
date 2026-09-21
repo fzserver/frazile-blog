@@ -391,8 +391,16 @@ func (s *Store) ConsumeCode(ctx context.Context, email, purpose string) error {
 // ticket stays in a cookie in the browser that gave the password and only its
 // hash is stored: a code is good only together with its ticket, so reading
 // the mailbox is not enough to log in.
+//
+// A code minted less than a minute ago is not replaced: it is already in the
+// inbox and still good, so only the ticket is re-minted and code comes back
+// empty, meaning "nothing new to mail". Whoever gave the password last holds
+// the ticket, which is why a second browser is never turned away.
 func (s *Store) IssueLoginCode(ctx context.Context, email string) (code, ticket string, err error) {
-	if code, err = s.IssueCode(ctx, email, PurposeLogin); err != nil {
+	switch code, err = s.IssueCode(ctx, email, PurposeLogin); {
+	case errors.Is(err, ErrCodeThrottled):
+		code = ""
+	case err != nil:
 		return "", "", err
 	}
 	b := make([]byte, 32)
@@ -401,8 +409,10 @@ func (s *Store) IssueLoginCode(ctx context.Context, email string) (code, ticket 
 	}
 	ticket = base64.RawURLEncoding.EncodeToString(b)
 	h := sha256.Sum256([]byte(ticket))
-	_, err = s.db.ExecContext(ctx, `UPDATE email_codes SET ticket = ? WHERE email = ? AND purpose = ?`, h[:], normEmail(email), PurposeLogin)
-	return code, ticket, err
+	if _, err := s.db.ExecContext(ctx, `UPDATE email_codes SET ticket = ? WHERE email = ? AND purpose = ?`, h[:], normEmail(email), PurposeLogin); err != nil {
+		return "", "", err
+	}
+	return code, ticket, nil
 }
 
 // checkLoginTicket is ErrCodeExpired for anyone without the ticket: a

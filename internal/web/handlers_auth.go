@@ -83,33 +83,29 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		s.startSession(w, r, u, next)
 		return
 	}
-	if !s.limit("logincode:"+u.Email, 10, time.Hour) {
-		d["Error"] = "Too many log-in codes for this account. Try again in an hour."
-		s.renderStatus(w, r, http.StatusTooManyRequests, "login", d)
-		return
-	}
+	// The ticket always moves to the browser that just gave the password, so
+	// a second attempt is never turned away; an empty code means the one sent
+	// moments ago still stands and is already in the inbox.
 	code, ticket, err := s.db.IssueLoginCode(r.Context(), u.Email)
-	if errors.Is(err, store.ErrCodeThrottled) {
-		// A code went out less than a minute ago. The browser it was for can
-		// carry on; any other has to wait for it to be a minute old.
-		if email, _ := loginPending(r); email != u.Email {
-			d["Error"] = "A log-in code was sent less than a minute ago. Wait a moment and log in again."
-			s.renderStatus(w, r, http.StatusTooManyRequests, "login", d)
-			return
-		}
-		http.Redirect(w, r, loginCodeURL(next), http.StatusSeeOther)
-		return
-	}
 	if err != nil {
 		s.fail(w, r, err)
 		return
 	}
-	if err := s.mailCode(r.Context(), u.Email, store.PurposeLogin, code); err != nil {
-		s.log.Error("log-in code", "err", err)
-		s.db.ConsumeCode(r.Context(), u.Email, store.PurposeLogin)
-		d["Error"] = "We could not send your log-in code. Please try again shortly."
-		s.renderStatus(w, r, http.StatusBadGateway, "login", d)
-		return
+	if code != "" {
+		// Only a code that is really mailed counts against the hourly budget:
+		// retries that reuse the code already sent must not spend it.
+		if !s.limit("logincode:"+u.Email, 10, time.Hour) {
+			d["Error"] = "Too many log-in codes for this account. Try again in an hour."
+			s.renderStatus(w, r, http.StatusTooManyRequests, "login", d)
+			return
+		}
+		if err := s.mailCode(r.Context(), u.Email, store.PurposeLogin, code); err != nil {
+			s.log.Error("log-in code", "err", err)
+			s.db.ConsumeCode(r.Context(), u.Email, store.PurposeLogin)
+			d["Error"] = "We could not send your log-in code. Please try again shortly."
+			s.renderStatus(w, r, http.StatusBadGateway, "login", d)
+			return
+		}
 	}
 	s.setLoginPending(w, u.Email, ticket)
 	http.Redirect(w, r, loginCodeURL(next), http.StatusSeeOther)
@@ -210,7 +206,7 @@ func (s *Server) loginCodeResend(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
-	if !s.limit("resend:"+s.ip(r), 5, 10*time.Minute) || !s.limit("logincode:"+email, 10, time.Hour) {
+	if !s.limit("resend:"+s.ip(r), 5, 10*time.Minute) {
 		s.flash(w, "err", "Too many requests. Wait a few minutes.")
 		http.Redirect(w, r, back, http.StatusSeeOther)
 		return
@@ -226,6 +222,10 @@ func (s *Server) loginCodeResend(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		s.log.Error("reissue log-in code", "err", err)
 		s.flash(w, "err", "Could not send the e-mail right now.")
+	// As on the password step, the hourly budget is spent only on a code that
+	// is really mailed.
+	case !s.limit("logincode:"+email, 10, time.Hour):
+		s.flash(w, "err", "Too many log-in codes for this account. Try again in an hour.")
 	default:
 		if err := s.mailCode(r.Context(), email, store.PurposeLogin, code); err != nil {
 			s.log.Error("resend log-in code", "err", err)
