@@ -1,0 +1,10 @@
+{{define "content"}}<div class="wrap auth"><form method="post" action="/login/code" class="panel">
+<h1>Check your inbox</h1>
+<p class="muted">Your password is right. To finish logging in, enter the 6-digit code we sent to <strong>{{.Email}}</strong>. Check the spam folder if it's not there within a minute.</p>
+{{with .Error}}<p class="alert">{{.}}</p>{{end}}
+<input type="hidden" name="next" value="{{.Next}}">
+<label>Log-in code<input class="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autocomplete="one-time-code" autofocus></label>
+<button class="btn wide" type="submit">Log in</button>
+</form>
+<form method="post" action="/login/code/resend" class="center"><input type="hidden" name="next" value="{{.Next}}"><button class="linkbtn" type="submit">Send a new code</button></form>
+</div>{{end}}

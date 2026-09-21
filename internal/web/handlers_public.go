@@ -55,6 +55,9 @@ func (s *Server) routes() {
 
 	m.HandleFunc("GET /login", s.loginForm)
 	m.HandleFunc("POST /login", s.login)
+	m.HandleFunc("GET /login/code", s.loginCodeForm)
+	m.HandleFunc("POST /login/code", s.loginCode)
+	m.HandleFunc("POST /login/code/resend", s.loginCodeResend)
 	m.HandleFunc("GET /register", s.registerForm)
 	m.HandleFunc("POST /register", s.register)
 	m.HandleFunc("GET /verify", s.verifyForm)

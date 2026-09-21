@@ -334,8 +334,16 @@ func (s *Server) sendCode(ctx context.Context, email, purpose string) error {
 	if err != nil {
 		return err
 	}
+	return s.mailCode(ctx, email, purpose, code)
+}
+
+// mailCode e-mails a code that has already been issued.
+func (s *Server) mailCode(ctx context.Context, email, purpose, code string) error {
+	if s.mailer == nil {
+		return errors.New("mail is not configured")
+	}
 	subject, text, html := mail.Code(s.Settings().SiteName, purpose, code, 10)
-	_, err = s.mailer.Send(ctx, mail.Message{To: email, Subject: subject, Text: text, HTML: html, ReplyTo: s.cfg.MailReplyTo})
+	_, err := s.mailer.Send(ctx, mail.Message{To: email, Subject: subject, Text: text, HTML: html, ReplyTo: s.cfg.MailReplyTo})
 	return err
 }
 

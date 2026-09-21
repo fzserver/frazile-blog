@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -147,7 +148,11 @@ func (s *Store) SetPassword(ctx context.Context, id int64, password string) erro
 	if _, err := rand.Read(salt); err != nil {
 		return err
 	}
-	_, err := s.db.ExecContext(ctx, `UPDATE users SET salt=?, hash=?, iters=? WHERE id=?`, salt, hashPassword(password, salt, s.Iters), s.Iters, id)
+	if _, err := s.db.ExecContext(ctx, `UPDATE users SET salt=?, hash=?, iters=? WHERE id=?`, salt, hashPassword(password, salt, s.Iters), s.Iters, id); err != nil {
+		return err
+	}
+	// A log-in waiting on its code was started with the old password.
+	_, err := s.db.ExecContext(ctx, `DELETE FROM email_codes WHERE purpose = ? AND email = (SELECT email FROM users WHERE id = ?)`, PurposeLogin, id)
 	return err
 }
 
@@ -319,6 +324,9 @@ const (
 	PurposeVerify = "verify"
 	PurposeReset  = "reset"
 	PurposeEmail  = "email"
+	// PurposeLogin finishes a log-in: the right password only gets a code
+	// mailed, and the session starts when the code comes back.
+	PurposeLogin = "login"
 )
 
 func normEmail(email string) string { return strings.ToLower(strings.TrimSpace(email)) }
@@ -377,6 +385,61 @@ func (s *Store) CheckCode(ctx context.Context, email, purpose, code string) erro
 func (s *Store) ConsumeCode(ctx context.Context, email, purpose string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM email_codes WHERE email = ? AND purpose = ?`, normEmail(email), purpose)
 	return err
+}
+
+// IssueLoginCode mints a log-in code and the ticket that goes with it. The
+// ticket stays in a cookie in the browser that gave the password and only its
+// hash is stored: a code is good only together with its ticket, so reading
+// the mailbox is not enough to log in.
+func (s *Store) IssueLoginCode(ctx context.Context, email string) (code, ticket string, err error) {
+	if code, err = s.IssueCode(ctx, email, PurposeLogin); err != nil {
+		return "", "", err
+	}
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", "", err
+	}
+	ticket = base64.RawURLEncoding.EncodeToString(b)
+	h := sha256.Sum256([]byte(ticket))
+	_, err = s.db.ExecContext(ctx, `UPDATE email_codes SET ticket = ? WHERE email = ? AND purpose = ?`, h[:], normEmail(email), PurposeLogin)
+	return code, ticket, err
+}
+
+// checkLoginTicket is ErrCodeExpired for anyone without the ticket: a
+// stranger learns nothing and gets no guess at the code.
+func (s *Store) checkLoginTicket(ctx context.Context, email, ticket string) error {
+	var hash []byte
+	err := s.db.QueryRowContext(ctx, `SELECT ticket FROM email_codes WHERE email = ? AND purpose = ?`, normEmail(email), PurposeLogin).Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrCodeExpired
+	}
+	if err != nil {
+		return err
+	}
+	h := sha256.Sum256([]byte(ticket))
+	if ticket == "" || !hmac.Equal(hash, h[:]) {
+		return ErrCodeExpired
+	}
+	return nil
+}
+
+// ReissueLoginCode mints a fresh code for the browser holding the ticket.
+func (s *Store) ReissueLoginCode(ctx context.Context, email, ticket string) (string, error) {
+	if err := s.checkLoginTicket(ctx, email, ticket); err != nil {
+		return "", err
+	}
+	return s.IssueCode(ctx, email, PurposeLogin)
+}
+
+// CheckLoginCode verifies the ticket and the code, and uses the code up.
+func (s *Store) CheckLoginCode(ctx context.Context, email, ticket, code string) error {
+	if err := s.checkLoginTicket(ctx, email, ticket); err != nil {
+		return err
+	}
+	if err := s.CheckCode(ctx, email, PurposeLogin, code); err != nil {
+		return err
+	}
+	return s.ConsumeCode(ctx, email, PurposeLogin)
 }
 
 func truncate(s string, n int) string {

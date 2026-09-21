@@ -174,7 +174,10 @@ END;
 `
 
 // migrations run every start; "duplicate column" is the already-applied case.
-var migrations = []string{}
+var migrations = []string{
+	// The hash of a log-in code's ticket; NULL for every other purpose.
+	`ALTER TABLE email_codes ADD COLUMN ticket BLOB`,
+}
 
 func isUniqueErr(err error) bool {
 	return err != nil && (strings.Contains(err.Error(), "UNIQUE constraint failed") || strings.Contains(err.Error(), "2067"))

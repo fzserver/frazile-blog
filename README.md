@@ -9,7 +9,8 @@ no external services beyond Resend (e-mail codes) and ntfy (pings).
 - Posts in Markdown (GFM, footnotes, code blocks) with a live-preview editor,
   drag-and-drop / paste uploads for **images and videos**, YouTube embeds,
   cover images, tags, drafts, **scheduled publishing**, pinned posts.
-- Accounts: register with **e-mail OTP verification**, log in, password reset
+- Accounts: register with **e-mail OTP verification**, log in (password, then
+  an e-mailed code, every time), password reset
   by code, change e-mail (code to the new address), avatar upload (auto
   256px crop), display name / bio / website, public profile pages
   (`/u/<username>`), sign out everywhere.

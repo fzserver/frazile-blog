@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/base64"
 	"errors"
 	"github.com/fzserver/frazile-blog/internal/notify"
 	"net/http"
@@ -76,6 +77,45 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/verify?email="+url.QueryEscape(u.Email), http.StatusSeeOther)
 		return
 	}
+	// The password is right. That earns a code, not a session. Only an
+	// instance with no mail at all, which has no way to send one, stops here.
+	if s.mailer == nil {
+		s.startSession(w, r, u, next)
+		return
+	}
+	if !s.limit("logincode:"+u.Email, 10, time.Hour) {
+		d["Error"] = "Too many log-in codes for this account. Try again in an hour."
+		s.renderStatus(w, r, http.StatusTooManyRequests, "login", d)
+		return
+	}
+	code, ticket, err := s.db.IssueLoginCode(r.Context(), u.Email)
+	if errors.Is(err, store.ErrCodeThrottled) {
+		// A code went out less than a minute ago. The browser it was for can
+		// carry on; any other has to wait for it to be a minute old.
+		if email, _ := loginPending(r); email != u.Email {
+			d["Error"] = "A log-in code was sent less than a minute ago. Wait a moment and log in again."
+			s.renderStatus(w, r, http.StatusTooManyRequests, "login", d)
+			return
+		}
+		http.Redirect(w, r, loginCodeURL(next), http.StatusSeeOther)
+		return
+	}
+	if err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	if err := s.mailCode(r.Context(), u.Email, store.PurposeLogin, code); err != nil {
+		s.log.Error("log-in code", "err", err)
+		s.db.ConsumeCode(r.Context(), u.Email, store.PurposeLogin)
+		d["Error"] = "We could not send your log-in code. Please try again shortly."
+		s.renderStatus(w, r, http.StatusBadGateway, "login", d)
+		return
+	}
+	s.setLoginPending(w, u.Email, ticket)
+	http.Redirect(w, r, loginCodeURL(next), http.StatusSeeOther)
+}
+
+func (s *Server) startSession(w http.ResponseWriter, r *http.Request, u *store.User, next string) {
 	token, err := s.db.CreateSession(r.Context(), u.ID, r.UserAgent(), s.ip(r))
 	if err != nil {
 		s.fail(w, r, err)
@@ -83,6 +123,118 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	}
 	s.setSessionCookie(w, token)
 	http.Redirect(w, r, next, http.StatusSeeOther)
+}
+
+// The address and the ticket of a log-in waiting on its code ride in a
+// short-lived cookie only the log-in pages see, never in the URL or the form:
+// the code is good only in the browser that gave the password.
+const loginCookie = "fzb_login"
+
+func (s *Server) setLoginPending(w http.ResponseWriter, email, ticket string) {
+	http.SetCookie(w, &http.Cookie{Name: loginCookie, Value: base64.RawURLEncoding.EncodeToString([]byte(email)) + "." + ticket,
+		Path: "/login", MaxAge: 30 * 60, HttpOnly: true, Secure: s.cfg.Secure(), SameSite: http.SameSiteLaxMode})
+}
+
+func (s *Server) clearLoginPending(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{Name: loginCookie, Value: "", Path: "/login", MaxAge: -1, HttpOnly: true, Secure: s.cfg.Secure(), SameSite: http.SameSiteLaxMode})
+}
+
+func loginPending(r *http.Request) (email, ticket string) {
+	c, err := r.Cookie(loginCookie)
+	if err != nil {
+		return "", ""
+	}
+	e, ticket, ok := strings.Cut(c.Value, ".")
+	b, err := base64.RawURLEncoding.DecodeString(e)
+	if !ok || err != nil || len(b) > 254 {
+		return "", ""
+	}
+	return string(b), ticket
+}
+
+func loginCodeURL(next string) string {
+	if next == "/" {
+		return "/login/code"
+	}
+	return "/login/code?next=" + url.QueryEscape(next)
+}
+
+func (s *Server) loginCodeForm(w http.ResponseWriter, r *http.Request) {
+	email, _ := loginPending(r)
+	if s.user(r) != nil || email == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	d := s.data(r, "Check your inbox")
+	d["NoIndex"], d["Email"], d["Next"] = true, email, safeNext(r.URL.Query().Get("next"))
+	s.render(w, r, "login_code", d)
+}
+
+func (s *Server) loginCode(w http.ResponseWriter, r *http.Request) {
+	next := safeNext(r.FormValue("next"))
+	email, ticket := loginPending(r)
+	if email == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	d := s.data(r, "Check your inbox")
+	d["NoIndex"], d["Email"], d["Next"] = true, email, next
+	if !s.limit("logincodetry:"+s.ip(r), 20, 10*time.Minute) {
+		d["Error"] = "Too many attempts. Wait a few minutes."
+		s.renderStatus(w, r, http.StatusTooManyRequests, "login_code", d)
+		return
+	}
+	if err := s.db.CheckLoginCode(r.Context(), email, ticket, strings.TrimSpace(r.FormValue("code"))); err != nil {
+		if errors.Is(err, store.ErrBadCode) {
+			d["Error"] = "That code is not right."
+		} else {
+			d["Error"] = "That code has expired. Log in again for a new one."
+		}
+		s.renderStatus(w, r, http.StatusBadRequest, "login_code", d)
+		return
+	}
+	u, err := s.db.UserByEmail(r.Context(), email)
+	if err != nil || u.Banned {
+		s.clearLoginPending(w)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	s.clearLoginPending(w)
+	s.startSession(w, r, u, next)
+}
+
+func (s *Server) loginCodeResend(w http.ResponseWriter, r *http.Request) {
+	back := loginCodeURL(safeNext(r.FormValue("next")))
+	email, ticket := loginPending(r)
+	if email == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	if !s.limit("resend:"+s.ip(r), 5, 10*time.Minute) || !s.limit("logincode:"+email, 10, time.Hour) {
+		s.flash(w, "err", "Too many requests. Wait a few minutes.")
+		http.Redirect(w, r, back, http.StatusSeeOther)
+		return
+	}
+	code, err := s.db.ReissueLoginCode(r.Context(), email, ticket)
+	switch {
+	case errors.Is(err, store.ErrCodeThrottled):
+		s.flash(w, "err", "A code was sent less than a minute ago. Check your inbox and spam folder.")
+	case errors.Is(err, store.ErrCodeExpired):
+		// Nothing waiting for this browser: the password is asked for again.
+		s.clearLoginPending(w)
+		back = "/login"
+	case err != nil:
+		s.log.Error("reissue log-in code", "err", err)
+		s.flash(w, "err", "Could not send the e-mail right now.")
+	default:
+		if err := s.mailCode(r.Context(), email, store.PurposeLogin, code); err != nil {
+			s.log.Error("resend log-in code", "err", err)
+			s.flash(w, "err", "Could not send the e-mail right now.")
+		} else {
+			s.flash(w, "ok", "A new code is on its way.")
+		}
+	}
+	http.Redirect(w, r, back, http.StatusSeeOther)
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {

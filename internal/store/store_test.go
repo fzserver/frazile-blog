@@ -181,3 +181,46 @@ func TestSlugify(t *testing.T) {
 		}
 	}
 }
+
+// A log-in code is good only with the ticket of the browser that asked for
+// it, works once, and dies with the password it was started with.
+func TestLoginCodes(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	u, err := s.CreateUser(ctx, "carol", "carol@example.com", "correcthorse", RoleReader, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, ticket, err := s.IssueLoginCode(ctx, "Carol@example.com")
+	if err != nil || len(code) != 6 || ticket == "" {
+		t.Fatalf("issue: %q %q %v", code, ticket, err)
+	}
+	for _, bad := range []string{"", "not-the-ticket"} {
+		if err := s.CheckLoginCode(ctx, u.Email, bad, code); !errors.Is(err, ErrCodeExpired) {
+			t.Fatalf("ticket %q: %v", bad, err)
+		}
+	}
+	if _, err := s.ReissueLoginCode(ctx, u.Email, "not-the-ticket"); !errors.Is(err, ErrCodeExpired) {
+		t.Fatalf("reissue without the ticket: %v", err)
+	}
+	if _, err := s.ReissueLoginCode(ctx, u.Email, ticket); !errors.Is(err, ErrCodeThrottled) {
+		t.Fatalf("reissue inside a minute: %v", err)
+	}
+	if err := s.CheckLoginCode(ctx, u.Email, ticket, code); err != nil {
+		t.Fatal("ticket and code rejected:", err)
+	}
+	if err := s.CheckLoginCode(ctx, u.Email, ticket, code); !errors.Is(err, ErrCodeExpired) {
+		t.Fatalf("a used code worked again: %v", err)
+	}
+
+	code, ticket, err = s.IssueLoginCode(ctx, u.Email)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.SetPassword(ctx, u.ID, "anotherhorse"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.CheckLoginCode(ctx, u.Email, ticket, code); !errors.Is(err, ErrCodeExpired) {
+		t.Fatalf("log-in started before the password change: %v", err)
+	}
+}
