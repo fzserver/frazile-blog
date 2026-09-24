@@ -5,3 +5,5 @@
 /blogd
 /data/
 __pycache__/
+tools/.session
+tools/.login-pending
